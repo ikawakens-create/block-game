@@ -292,34 +292,42 @@ const SHAPES = [
     {s:[[1,1],[1,1],[1,0]],   c:'#55efc4', maxGems:3, weight:0.7}, // P
     {s:[[1,1],[1,1],[0,1]],   c:'#ffeaa7', maxGems:3, weight:0.7},
 
-    // 6-cell big rectangles
-    {s:[[1,1,1],[1,1,1]],     c:'#fd79a8', maxGems:3, weight:0.5}, // 2x3
-    {s:[[1,1],[1,1],[1,1]],   c:'#74b9ff', maxGems:3, weight:0.5}, // 3x2
+    // 6-cell rectangles
+    {s:[[1,1,1],[1,1,1]],         c:'#fd79a8', maxGems:3, weight:0.6}, // 2x3
+    {s:[[1,1],[1,1],[1,1]],       c:'#74b9ff', maxGems:3, weight:0.6}, // 3x2
 
-    // 9-cell huge
-    {s:[[1,1,1],[1,1,1],[1,1,1]], c:'#ffd700', maxGems:3, weight:0.2}, // 3x3
+    // 8-cell rectangles (新規)
+    {s:[[1,1,1,1],[1,1,1,1]],     c:'#e84393', maxGems:3, weight:0.5}, // 2x4
+    {s:[[1,1],[1,1],[1,1],[1,1]], c:'#00b894', maxGems:3, weight:0.5}, // 4x2
+
+    // 9-cell 3x3
+    {s:[[1,1,1],[1,1,1],[1,1,1]], c:'#ffd700', maxGems:3, weight:0.5}, // 3x3
+
+    // 10-cell (新規)
+    {s:[[1,1,1,1,1],[1,1,1,1,1]], c:'#ff7675', maxGems:3, weight:0.3}, // 2x5
 ];
 
 // ─── Stage patterns (initial blocks) ────────────────────
+// Bright color palette — same vibrancy as player pieces
+const BP = ['#e74c3c','#3498db','#2ecc71','#e67e22','#9b59b6','#1abc9c','#e84393','#f39c12'];
+function bc(x, y) { return BP[(x * 3 + y * 5) % BP.length]; }
+
 const STAGE_PATTERNS = [
-    // Stage 1: bottom + side towers
+    // Stage 1: bottom rows + side columns
     () => {
-        const C='#3a3a5c';
-        [0,1,2,3,4,5,6].forEach(x => setCell(7,x,C));
-        [0,1,2,4,5,7].forEach(x => setCell(6,x,C));
-        [0,1,6,7].forEach(x => setCell(5,x,C));
-        [0,7].forEach(x => setCell(4,x,C));
-        // initial gems for instant satisfaction
+        [0,1,2,3,4,5,6].forEach(x => setCell(7,x,bc(x,7)));
+        [0,1,2,4,5,7].forEach(x => setCell(6,x,bc(x,6)));
+        [0,1,6,7].forEach(x => setCell(5,x,bc(x,5)));
+        [0,7].forEach(x => setCell(4,x,bc(x,4)));
         setCell(7,7,'#9b59b6','emerald');
         setCell(6,6,'#e74c3c','ruby');
     },
     // Stage 2: cross pattern
     () => {
-        const C='#3a3a5c';
-        for (let i=1;i<=6;i++) { setCell(i,3,C); setCell(i,4,C); }
-        for (let i=1;i<=6;i++) { setCell(3,i,C); setCell(4,i,C); }
-        [0,1,6,7].forEach(x => setCell(7,x,C));
-        [0,7].forEach(x => setCell(6,x,C));
+        for (let i=1;i<=6;i++) { setCell(i,3,bc(3,i)); setCell(i,4,bc(4,i)); }
+        for (let i=1;i<=6;i++) { setCell(3,i,bc(i,3)); setCell(4,i,bc(i,4)); }
+        [0,1,6,7].forEach(x => setCell(7,x,bc(x,7)));
+        [0,7].forEach(x => setCell(6,x,bc(x,6)));
         setCell(3,3,'#1e90ff','sapphire');
         setCell(4,4,'#00d96e','emerald');
         setCell(3,4,'#ffd700','gold');
@@ -327,35 +335,22 @@ const STAGE_PATTERNS = [
     },
     // Stage 3: four corner L-shapes
     () => {
-        const C='#3a3a5c';
-        // top-left
-        for (let i=0;i<3;i++) setCell(0,i,C);
-        for (let i=0;i<3;i++) setCell(i,0,C);
-        // top-right
-        for (let i=5;i<8;i++) setCell(0,i,C);
-        for (let i=0;i<3;i++) setCell(i,7,C);
-        // bottom-left
-        for (let i=5;i<8;i++) setCell(i,0,C);
-        for (let i=0;i<3;i++) setCell(7,i,C);
-        // bottom-right
-        for (let i=5;i<8;i++) setCell(i,7,C);
-        for (let i=5;i<8;i++) setCell(7,i,C);
-        // center cross
-        setCell(3,3,C); setCell(3,4,C); setCell(4,3,C); setCell(4,4,C);
-        // gems on corners
+        for (let i=0;i<3;i++) { setCell(0,i,bc(i,0)); setCell(i,0,bc(0,i)); }
+        for (let i=5;i<8;i++) { setCell(0,i,bc(i,0)); setCell(i-5,7,bc(7,i)); }
+        for (let i=5;i<8;i++) { setCell(i,0,bc(0,i)); setCell(7,i-5,bc(i,7)); }
+        for (let i=5;i<8;i++) { setCell(i,7,bc(7,i)); setCell(7,i,bc(i,7)); }
+        setCell(3,3,bc(3,3)); setCell(3,4,bc(4,3)); setCell(4,3,bc(3,4)); setCell(4,4,bc(4,4));
         setCell(0,0,'#ffd700','gold');
         setCell(0,7,'#1e90ff','sapphire');
         setCell(7,0,'#00d96e','emerald');
         setCell(7,7,'#ff1f57','ruby');
     },
-    // Stage 4: zigzag
+    // Stage 4: zigzag stripes
     () => {
-        const C='#3a3a5c';
-        // zigzag pattern
-        [0,1,2,3].forEach(x => setCell(7,x,C));
-        [4,5,6,7].forEach(x => setCell(6,x,C));
-        [0,1,2,3].forEach(x => setCell(5,x,C));
-        [4,5,6,7].forEach(x => setCell(4,x,C));
+        [0,1,2,3].forEach(x => setCell(7,x,bc(x,7)));
+        [4,5,6,7].forEach(x => setCell(6,x,bc(x,6)));
+        [0,1,2,3].forEach(x => setCell(5,x,bc(x,5)));
+        [4,5,6,7].forEach(x => setCell(4,x,bc(x,4)));
         setCell(7,3,'#ffd700','gold');
         setCell(6,4,'#ff1f57','ruby');
         setCell(5,3,'#1e90ff','sapphire');
@@ -404,11 +399,41 @@ function resize() {
 }
 
 // ─── Piece generation ───────────────────────────────────
-function pickShape() {
-    const totalW = SHAPES.reduce((s,sh)=>s+sh.weight, 0);
+function getBoardDensity() {
+    let filled = 0;
+    for (let y=0;y<CELL;y++) for (let x=0;x<CELL;x++) if (grid[y][x]) filled++;
+    return filled / (CELL * CELL);
+}
+
+// 盤面が空いているほど大きいピースを優先する重みを返す
+function adjustedWeight(sh, density) {
+    const n = sh.s.flat().filter(c=>c).length;
+    let w = sh.weight;
+    if (density < 0.20) {
+        // ガラガラ → 大きいピースを強く優先
+        if (n >= 8) w *= 8;
+        else if (n >= 6) w *= 5;
+        else if (n >= 4) w *= 3;
+        else if (n <= 2) w *= 0.1;
+    } else if (density < 0.35) {
+        // やや空き → 中〜大ピースを優先
+        if (n >= 6) w *= 4;
+        else if (n >= 4) w *= 2;
+        else if (n <= 2) w *= 0.3;
+    } else if (density < 0.55) {
+        // 通常密度 → 少しだけ大きめ寄り
+        if (n >= 4) w *= 1.4;
+        else if (n === 1) w *= 0.5;
+    }
+    // 高密度: そのまま（小さいピースで隙間を埋める局面）
+    return w;
+}
+
+function pickShape(density) {
+    const totalW = SHAPES.reduce((s,sh)=>s+adjustedWeight(sh,density), 0);
     let r = Math.random() * totalW;
     for (const sh of SHAPES) {
-        r -= sh.weight;
+        r -= adjustedWeight(sh, density);
         if (r <= 0) return sh;
     }
     return SHAPES[0];
@@ -481,12 +506,13 @@ function wouldClearLine(shape, x, y) {
 }
 
 function spawnPieces() {
+    const density = getBoardDensity();
     pieces = [];
-    // 1 of 3 pieces is a "helper" if available (when grid has enough blocks to enable line clears)
-    const helper = findHelperShape();
+    // 1 of 3 pieces is a "helper" (clears a line) when board is dense enough
+    const helper = density > 0.25 ? findHelperShape() : null;
     const helperSlot = helper ? Math.floor(Math.random()*3) : -1;
     for (let i=0; i<3; i++) {
-        const sh = (i === helperSlot) ? helper : pickShape();
+        const sh = (i === helperSlot) ? helper : pickShape(density);
         pieces.push(makePiece(sh, i));
     }
 }
