@@ -123,6 +123,22 @@ function animate() {
     particles = particles.filter(p => p.life > 0);
     particles.forEach(p => { p.update(); p.draw(); });
 
+    // ドラッグ中のゴースト（配置プレビュー）
+    if (draggingPiece) {
+        const gx = Math.round((dragX - (draggingPiece.shape[0].length * cellSize / 2)) / cellSize);
+        const gy = Math.round((dragY - (draggingPiece.shape.length * cellSize / 2)) / cellSize);
+        if (canPlace(draggingPiece.shape, gx, gy)) {
+            ctx.globalAlpha = 0.35;
+            draggingPiece.shape.forEach((row, ri) => row.forEach((cell, ci) => {
+                if (cell) {
+                    ctx.fillStyle = draggingPiece.color;
+                    ctx.fillRect((gx+ci)*cellSize+1, (gy+ri)*cellSize+1, cellSize-2, cellSize-2);
+                }
+            }));
+            ctx.globalAlpha = 1.0;
+        }
+    }
+
     // 持ち駒描画
     currentPieces.forEach(p => {
         if (p === draggingPiece) return;
@@ -147,18 +163,19 @@ function drawPiece(p, x, y, scale) {
 
 // 操作処理
 canvas.addEventListener('mousedown', e => start(e.clientX, e.clientY));
-canvas.addEventListener('touchstart', e => start(e.touches[0].clientX, e.touches[0].clientY));
+canvas.addEventListener('touchstart', e => { e.preventDefault(); start(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
 window.addEventListener('mousemove', e => move(e.clientX, e.clientY));
-window.addEventListener('touchmove', e => move(e.touches[0].clientX, e.touches[0].clientY));
+window.addEventListener('touchmove', e => { e.preventDefault(); move(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
 window.addEventListener('mouseup', end);
-window.addEventListener('touchend', end);
+window.addEventListener('touchend', e => { e.preventDefault(); end(); }, { passive: false });
 
 function start(ex, ey) {
     if (audioCtx.state === 'suspended') audioCtx.resume();
     const rect = canvas.getBoundingClientRect();
     const x = ex - rect.left, y = ey - rect.top;
+    const hitRadius = Math.max(60, cellSize * 1.2);
     currentPieces.forEach(p => {
-        if (Math.abs(x - p.x) < 50 && Math.abs(y - p.y) < 50) {
+        if (Math.abs(x - p.x) < hitRadius && Math.abs(y - p.y) < hitRadius) {
             draggingPiece = p; dragX = x; dragY = y;
             playSound(440, 'sine', 0.05);
         }
