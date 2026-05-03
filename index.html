@@ -37,27 +37,23 @@
             color: #aaa;
             margin-bottom: 4px;
         }
-        #gem-goal-text span { color: #fff; font-weight: bold; }
-        #gem-icons {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 5px;
-            min-height: 22px;
-            flex-wrap: wrap;
+        #gem-goal-text span { color: #fff; font-weight: bold; font-size: 15px; }
+        #gem-bar-bg {
+            margin: 0 auto;
+            max-width: 320px;
+            height: 14px;
+            background: #1e1e3a;
+            border: 1.5px solid #444;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
         }
-        .gem-icon {
-            width: 18px;
-            height: 18px;
-            transform: rotate(45deg);
-            border-radius: 3px;
-            opacity: 0.25;
-            transition: opacity 0.25s, box-shadow 0.25s;
-            flex-shrink: 0;
-        }
-        .gem-icon.lit {
-            opacity: 1;
-            box-shadow: 0 0 8px currentColor;
+        #gem-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff00de, #ffd700);
+            box-shadow: 0 0 8px #ffd700;
+            transition: width 0.4s ease;
+            width: 0%;
         }
         #combo-row {
             font-size: 17px;
@@ -85,17 +81,18 @@
             display: block;
             touch-action: none;
         }
-        #overlay {
+        .overlay {
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.82);
             z-index: 50;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            padding: 20px;
         }
-        #overlay.show { display: flex; }
+        .overlay.show { display: flex; }
         #overlay-title {
             font-size: 40px;
             font-weight: bold;
@@ -104,43 +101,41 @@
             animation: pop 0.4s ease-out;
         }
         #overlay-sub { font-size: 15px; color: #aaa; margin: 6px 0 4px; }
-        #overlay-score { font-size: 24px; font-weight: bold; color: #fff; margin-bottom: 22px; }
-        #next-btn {
-            padding: 14px 48px;
-            font-size: 22px;
+        #overlay-score { font-size: 24px; font-weight: bold; color: #fff; margin-bottom: 12px; }
+        #next-preview {
+            font-size: 14px;
+            color: #aaa;
+            margin-bottom: 22px;
+        }
+        #next-preview b { color: #ffd700; font-size: 16px; }
+        button.big-btn {
+            padding: 18px 56px;
+            font-size: 24px;
             font-weight: bold;
             background: linear-gradient(135deg, #00f2fe 0%, #9b00ff 100%);
             border: none;
-            border-radius: 40px;
+            border-radius: 50px;
             color: white;
             cursor: pointer;
             box-shadow: 0 6px 24px rgba(155, 0, 255, 0.5);
             -webkit-tap-highlight-color: transparent;
             letter-spacing: 1px;
+            touch-action: manipulation;
         }
-        #gameover-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.85);
-            z-index: 50;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+        button.big-btn:active {
+            transform: scale(0.95);
         }
-        #gameover-overlay.show { display: flex; }
-        #gameover-overlay h1 { font-size: 38px; color: #ff4757; text-shadow: 0 0 20px #ff4757; }
-        #gameover-overlay .go-score { font-size: 22px; margin: 10px 0 24px; }
-        #retry-btn {
-            padding: 14px 48px;
-            font-size: 20px;
-            font-weight: bold;
+        #gameover-overlay h1 {
+            font-size: 38px;
+            color: #ff4757;
+            text-shadow: 0 0 20px #ff4757;
+        }
+        #gameover-overlay .go-score {
+            font-size: 22px;
+            margin: 10px 0 24px;
+        }
+        button.retry-btn {
             background: linear-gradient(135deg, #ff4757, #ff6b81);
-            border: none;
-            border-radius: 40px;
-            color: white;
-            cursor: pointer;
-            -webkit-tap-highlight-color: transparent;
         }
         @keyframes pop {
             0%   { transform: scale(0.5); opacity: 0; }
@@ -156,25 +151,26 @@
     <div id="stage-label">STAGE 1</div>
 </div>
 <div id="gem-bar-row">
-    <div id="gem-goal-text">💎 宝石を <span id="g-got">0</span> / <span id="g-need">3</span> こ集めよう！</div>
-    <div id="gem-icons"></div>
+    <div id="gem-goal-text">💎 宝石を <span id="g-got">0</span> / <span id="g-need">15</span> こ集めよう！</div>
+    <div id="gem-bar-bg"><div id="gem-bar-fill"></div></div>
 </div>
-<div id="combo-row" id="combo-row">COMBO x2!</div>
+<div id="combo-row">COMBO x2!</div>
 <div id="canvas-wrap">
     <canvas id="gameCanvas"></canvas>
 </div>
 
-<div id="overlay">
+<div id="overlay" class="overlay">
     <div id="overlay-title">✨ STAGE CLEAR! ✨</div>
     <div id="overlay-sub">ステージクリア！</div>
     <div id="overlay-score">SCORE: 0</div>
-    <button id="next-btn" onclick="nextStage()">つぎへ ▶</button>
+    <div id="next-preview">つぎは <b id="next-need">22</b> こ集めよう！</div>
+    <button class="big-btn" onclick="nextStage()">つぎへ ▶</button>
 </div>
 
-<div id="gameover-overlay">
+<div id="gameover-overlay" class="overlay">
     <h1>GAME OVER</h1>
     <div class="go-score" id="go-score-text">SCORE: 0</div>
-    <button id="retry-btn" onclick="retryGame()">もういちど ↩</button>
+    <button class="big-btn retry-btn" onclick="retryGame()">もういちど ↩</button>
 </div>
 
 <script>
@@ -185,9 +181,10 @@ const stageEl = document.getElementById('stage-label');
 const comboEl = document.getElementById('combo-row');
 const gGotEl  = document.getElementById('g-got');
 const gNeedEl = document.getElementById('g-need');
-const gemIconsEl = document.getElementById('gem-icons');
+const gemBarFill = document.getElementById('gem-bar-fill');
 const overlay    = document.getElementById('overlay');
 const overlayScoreEl = document.getElementById('overlay-score');
+const nextNeedEl = document.getElementById('next-need');
 const gameoverOverlay = document.getElementById('gameover-overlay');
 const goScoreText = document.getElementById('go-score-text');
 
@@ -204,7 +201,7 @@ function tone(freq, type = 'sine', dur = 0.12, vol = 0.09) {
     } catch(e) {}
 }
 function playClear() {
-    [523,659,784,1047,1319,1568].forEach((f,i) => setTimeout(()=>tone(f,'triangle',0.35,0.12), i*90));
+    [523,659,784,1047,1319,1568,2093].forEach((f,i) => setTimeout(()=>tone(f,'triangle',0.4,0.13), i*85));
 }
 function playGem() {
     tone(1200,'sine',0.1,0.1); setTimeout(()=>tone(1600,'sine',0.15,0.08),80);
@@ -228,7 +225,6 @@ class Particle {
     }
 }
 
-// Floating score text
 class FloatText {
     constructor(x, y, txt, color='#ffd700') {
         this.x=x; this.y=y; this.txt=txt; this.color=color;
@@ -250,56 +246,149 @@ class FloatText {
 const CELL = 8;
 
 const GEM = {
-    ruby:     {color:'#ff4757', glow:'#ff6b81'},
-    sapphire: {color:'#54a0ff', glow:'#74b9ff'},
-    emerald:  {color:'#2ecc71', glow:'#55efc4'},
+    ruby:     {color:'#ff1f57', glow:'#ff6b81'},
+    sapphire: {color:'#1e90ff', glow:'#74b9ff'},
+    emerald:  {color:'#00d96e', glow:'#55efc4'},
     gold:     {color:'#ffd700', glow:'#fff200'},
 };
 const GEM_KEYS = ['ruby','sapphire','emerald','gold'];
 
+// Shapes — much more variety: tetrominoes, pentominoes, plus, U, big squares
+// maxGems: max number of gems this piece can have
 const SHAPES = [
-    {s:[[1,1],[1,1]],       c:'#e74c3c', gem:null},
-    {s:[[1,1,1]],           c:'#2ecc71', gem:'ruby'},
-    {s:[[1],[1],[1]],       c:'#3498db', gem:'sapphire'},
-    {s:[[1]],               c:'#f1c40f', gem:null},
-    {s:[[1,1,1],[0,1,0]],   c:'#9b59b6', gem:'emerald'},
-    {s:[[1,1],[1,0],[1,0]], c:'#e67e22', gem:null},
-    {s:[[1,1,0],[0,1,1]],   c:'#1abc9c', gem:'sapphire'},
-    {s:[[0,1,1],[1,1,0]],   c:'#e74c3c', gem:'ruby'},
-    {s:[[1,1,1,1]],         c:'#00cec9', gem:null},
-    {s:[[1],[1],[1],[1]],   c:'#fd79a8', gem:null},
-    {s:[[1,1,1],[1,0,0]],   c:'#6c5ce7', gem:'gold'},
-    {s:[[1,1],[0,1],[0,1]], c:'#fdcb6e', gem:'emerald'},
-    {s:[[1,1,1],[0,0,1]],   c:'#00b894', gem:'gold'},
-    {s:[[1,0],[1,1],[0,1]], c:'#a29bfe', gem:null},
+    // 1-cell rescue (always has gem)
+    {s:[[1]],                 c:'#f1c40f', maxGems:1, weight:0.5},
+
+    // 2-cell
+    {s:[[1,1]],               c:'#e74c3c', maxGems:1, weight:1},
+    {s:[[1],[1]],             c:'#3498db', maxGems:1, weight:1},
+
+    // 3-cell
+    {s:[[1,1,1]],             c:'#2ecc71', maxGems:2, weight:1},
+    {s:[[1],[1],[1]],         c:'#9b59b6', maxGems:2, weight:1},
+    {s:[[1,1],[1,0]],         c:'#e67e22', maxGems:1, weight:1},
+    {s:[[1,1],[0,1]],         c:'#1abc9c', maxGems:1, weight:1},
+    {s:[[1,0],[1,1]],         c:'#16a085', maxGems:1, weight:1},
+    {s:[[0,1],[1,1]],         c:'#d35400', maxGems:1, weight:1},
+
+    // 4-cell tetrominoes
+    {s:[[1,1],[1,1]],         c:'#e74c3c', maxGems:2, weight:1},   // O
+    {s:[[1,1,1,1]],           c:'#00cec9', maxGems:2, weight:1},   // I
+    {s:[[1],[1],[1],[1]],     c:'#fd79a8', maxGems:2, weight:1},   // I vert
+    {s:[[1,1,1],[0,1,0]],     c:'#9b59b6', maxGems:2, weight:1},   // T
+    {s:[[1,1,1],[1,0,0]],     c:'#6c5ce7', maxGems:2, weight:1},   // L
+    {s:[[1,1,1],[0,0,1]],     c:'#00b894', maxGems:2, weight:1},   // J
+    {s:[[1,0],[1,0],[1,1]],   c:'#e67e22', maxGems:2, weight:1},   // L rot
+    {s:[[0,1],[0,1],[1,1]],   c:'#fdcb6e', maxGems:2, weight:1},   // J rot
+    {s:[[1,1,0],[0,1,1]],     c:'#f39c12', maxGems:2, weight:1},   // S
+    {s:[[0,1,1],[1,1,0]],     c:'#c0392b', maxGems:2, weight:1},   // Z
+
+    // 5-cell pentominoes
+    {s:[[1,1,1,1,1]],         c:'#3498db', maxGems:3, weight:0.4}, // long I
+    {s:[[1],[1],[1],[1],[1]], c:'#e84393', maxGems:3, weight:0.4},
+    {s:[[0,1,0],[1,1,1],[0,1,0]], c:'#fdcb6e', maxGems:3, weight:0.6}, // plus +
+    {s:[[1,0,1],[1,1,1]],     c:'#a29bfe', maxGems:3, weight:0.7}, // U
+    {s:[[1,1,1],[1,0,1]],     c:'#74b9ff', maxGems:3, weight:0.7}, // n
+    {s:[[1,1],[1,1],[1,0]],   c:'#55efc4', maxGems:3, weight:0.7}, // P
+    {s:[[1,1],[1,1],[0,1]],   c:'#ffeaa7', maxGems:3, weight:0.7},
+
+    // 6-cell big rectangles
+    {s:[[1,1,1],[1,1,1]],     c:'#fd79a8', maxGems:3, weight:0.5}, // 2x3
+    {s:[[1,1],[1,1],[1,1]],   c:'#74b9ff', maxGems:3, weight:0.5}, // 3x2
+
+    // 9-cell huge
+    {s:[[1,1,1],[1,1,1],[1,1,1]], c:'#ffd700', maxGems:3, weight:0.2}, // 3x3
+];
+
+// ─── Stage patterns (initial blocks) ────────────────────
+const STAGE_PATTERNS = [
+    // Stage 1: bottom + side towers
+    () => {
+        const C='#3a3a5c';
+        [0,1,2,3,4,5,6].forEach(x => setCell(7,x,C));
+        [0,1,2,4,5,7].forEach(x => setCell(6,x,C));
+        [0,1,6,7].forEach(x => setCell(5,x,C));
+        [0,7].forEach(x => setCell(4,x,C));
+        // initial gems for instant satisfaction
+        setCell(7,7,'#9b59b6','emerald');
+        setCell(6,6,'#e74c3c','ruby');
+    },
+    // Stage 2: cross pattern
+    () => {
+        const C='#3a3a5c';
+        for (let i=1;i<=6;i++) { setCell(i,3,C); setCell(i,4,C); }
+        for (let i=1;i<=6;i++) { setCell(3,i,C); setCell(4,i,C); }
+        [0,1,6,7].forEach(x => setCell(7,x,C));
+        [0,7].forEach(x => setCell(6,x,C));
+        setCell(3,3,'#1e90ff','sapphire');
+        setCell(4,4,'#00d96e','emerald');
+        setCell(3,4,'#ffd700','gold');
+        setCell(4,3,'#ff1f57','ruby');
+    },
+    // Stage 3: four corner L-shapes
+    () => {
+        const C='#3a3a5c';
+        // top-left
+        for (let i=0;i<3;i++) setCell(0,i,C);
+        for (let i=0;i<3;i++) setCell(i,0,C);
+        // top-right
+        for (let i=5;i<8;i++) setCell(0,i,C);
+        for (let i=0;i<3;i++) setCell(i,7,C);
+        // bottom-left
+        for (let i=5;i<8;i++) setCell(i,0,C);
+        for (let i=0;i<3;i++) setCell(7,i,C);
+        // bottom-right
+        for (let i=5;i<8;i++) setCell(i,7,C);
+        for (let i=5;i<8;i++) setCell(7,i,C);
+        // center cross
+        setCell(3,3,C); setCell(3,4,C); setCell(4,3,C); setCell(4,4,C);
+        // gems on corners
+        setCell(0,0,'#ffd700','gold');
+        setCell(0,7,'#1e90ff','sapphire');
+        setCell(7,0,'#00d96e','emerald');
+        setCell(7,7,'#ff1f57','ruby');
+    },
+    // Stage 4: zigzag
+    () => {
+        const C='#3a3a5c';
+        // zigzag pattern
+        [0,1,2,3].forEach(x => setCell(7,x,C));
+        [4,5,6,7].forEach(x => setCell(6,x,C));
+        [0,1,2,3].forEach(x => setCell(5,x,C));
+        [4,5,6,7].forEach(x => setCell(4,x,C));
+        setCell(7,3,'#ffd700','gold');
+        setCell(6,4,'#ff1f57','ruby');
+        setCell(5,3,'#1e90ff','sapphire');
+        setCell(4,4,'#00d96e','emerald');
+    },
 ];
 
 // ─── State ──────────────────────────────────────────────
 let grid, cellSize, particles=[], floats=[];
 let pieces=[], drag=null, dragX=0, dragY=0;
-let dragScale=1;  // piece scale while dragging
+let dragScale=1;
 let score=0, combo=0, comboTimer=null;
-let stage=1, gemsGot=0, gemsNeed=3;
+let stage=1, gemsGot=0, gemsNeed=15;
 let locked=false;
-let flashAlpha=0; // screen flash on gem collect
+let flashAlpha=0;
+
+function gemNeedFor(s) {
+    return Math.min(15 + (s - 1) * 7, 50);
+}
 
 // ─── Grid ────────────────────────────────────────────────
 function initGrid() {
     grid = Array(CELL).fill(null).map(()=>Array(CELL).fill(null));
 }
 
-function setupStartBlocks() {
-    // Dark starter blocks — almost-complete rows for instant gratification
-    const C = ['#3a3a5c','#2e3d5c','#2e4a3a','#4a3a2e'];
-    // Row 7 (bottom): 7/8 filled → 1 piece fills it instantly
-    [0,1,2,3,4,5,6].forEach(x => setCell(7,x,C[x%4]));
-    // Row 6: 6/8 filled
-    [0,1,2,4,5,7].forEach(x => setCell(6,x,C[x%4]));
-    // Row 5: partial
-    [0,1,4,5].forEach(x => setCell(5,x,C[x%4]));
-}
 function setCell(row,col,color,gem=null) {
+    if (row<0||row>=CELL||col<0||col>=CELL) return;
     grid[row][col] = {color, gem};
+}
+
+function setupStartBlocks() {
+    const idx = (stage - 1) % STAGE_PATTERNS.length;
+    STAGE_PATTERNS[idx]();
 }
 
 // ─── Resize ──────────────────────────────────────────────
@@ -307,47 +396,144 @@ function resize() {
     const wrap = document.getElementById('canvas-wrap');
     const avW = wrap.clientWidth - 8;
     const avH = wrap.clientHeight - 8;
-    const byH = avH / 1.28;
+    const byH = avH / 1.30;
     const size = Math.floor(Math.min(avW, byH, 490));
     canvas.width  = size;
-    canvas.height = Math.floor(size * 1.28);
+    canvas.height = Math.floor(size * 1.30);
     cellSize = size / CELL;
 }
 
-// ─── Pieces ──────────────────────────────────────────────
-function spawnPieces() {
-    pieces = [];
-    for (let i=0; i<3; i++) {
-        const t = SHAPES[Math.floor(Math.random()*SHAPES.length)];
-        const px = (canvas.width/3)*i + canvas.width/6;
-        const py = canvas.width + (canvas.height-canvas.width)/2;
-        pieces.push({shape:t.s, color:t.c, gem:t.gem, x:px, y:py});
+// ─── Piece generation ───────────────────────────────────
+function pickShape() {
+    const totalW = SHAPES.reduce((s,sh)=>s+sh.weight, 0);
+    let r = Math.random() * totalW;
+    for (const sh of SHAPES) {
+        r -= sh.weight;
+        if (r <= 0) return sh;
     }
+    return SHAPES[0];
 }
 
-function firstCell(shape) {
-    for (let r=0;r<shape.length;r++)
-        for (let c=0;c<shape[r].length;c++)
-            if (shape[r][c]) return [r,c];
-    return [0,0];
+function makePiece(shapeData, idx) {
+    const cells = [];
+    shapeData.s.forEach((row, ri) => row.forEach((c, ci) => {
+        if (c) cells.push({r:ri, c:ci});
+    }));
+
+    // Decide gem count
+    let gemCount = 0;
+    const isOneByOne = (cells.length === 1);
+    if (isOneByOne) {
+        gemCount = 1;  // 1x1 always has gem (rescue + reward)
+    } else if (Math.random() < 0.75) {  // 75% has at least 1 gem
+        gemCount = 1 + Math.floor(Math.random() * shapeData.maxGems);
+        gemCount = Math.min(gemCount, cells.length);
+    }
+
+    // Random gem assignment
+    const shuffled = [...cells].sort(()=>Math.random()-0.5);
+    const gemCells = [];
+    for (let i = 0; i < gemCount; i++) {
+        const gemType = GEM_KEYS[Math.floor(Math.random()*GEM_KEYS.length)];
+        gemCells.push({r: shuffled[i].r, c: shuffled[i].c, type: gemType});
+    }
+
+    const px = (canvas.width / 3) * idx + canvas.width / 6;
+    const py = canvas.width + (canvas.height - canvas.width) / 2;
+    return {shape: shapeData.s, color: shapeData.c, gemCells, x: px, y: py};
+}
+
+// Smart helper: find a shape that can clear at least 1 line on current grid
+function findHelperShape() {
+    const shuffled = [...SHAPES].sort(()=>Math.random()-0.5);
+    for (const shape of shuffled) {
+        for (let y=0; y<=CELL-shape.s.length; y++) {
+            for (let x=0; x<=CELL-shape.s[0].length; x++) {
+                if (canPlace(shape.s, x, y) && wouldClearLine(shape.s, x, y)) {
+                    return shape;
+                }
+            }
+        }
+    }
+    return null;
+}
+
+function wouldClearLine(shape, x, y) {
+    const tmp = new Set();
+    shape.forEach((row, ri) => row.forEach((c, ci) => {
+        if (c) tmp.add((y+ri)+','+(x+ci));
+    }));
+    for (let r=0; r<CELL; r++) {
+        let full = true;
+        for (let c=0; c<CELL; c++) {
+            if (!grid[r][c] && !tmp.has(r+','+c)) { full=false; break; }
+        }
+        if (full) return true;
+    }
+    for (let c=0; c<CELL; c++) {
+        let full = true;
+        for (let r=0; r<CELL; r++) {
+            if (!grid[r][c] && !tmp.has(r+','+c)) { full=false; break; }
+        }
+        if (full) return true;
+    }
+    return false;
+}
+
+function spawnPieces() {
+    pieces = [];
+    // 1 of 3 pieces is a "helper" if available (when grid has enough blocks to enable line clears)
+    const helper = findHelperShape();
+    const helperSlot = helper ? Math.floor(Math.random()*3) : -1;
+    for (let i=0; i<3; i++) {
+        const sh = (i === helperSlot) ? helper : pickShape();
+        pieces.push(makePiece(sh, i));
+    }
 }
 
 // ─── Drawing ─────────────────────────────────────────────
 function drawGem(cx, cy, type, r, pulse=1) {
     const g = GEM[type];
     const pr = r * pulse;
-    ctx.save(); ctx.translate(cx,cy);
-    ctx.shadowBlur=16*pulse; ctx.shadowColor=g.glow;
-    ctx.fillStyle=g.color;
+
+    // Dark backdrop circle for high contrast on any color
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
     ctx.beginPath();
-    ctx.moveTo(0,-pr); ctx.lineTo(pr*.72,0); ctx.lineTo(0,pr); ctx.lineTo(-pr*.72,0);
-    ctx.closePath(); ctx.fill();
-    ctx.shadowBlur=0;
-    ctx.fillStyle='rgba(255,255,255,0.58)';
+    ctx.arc(cx, cy, pr * 1.18, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Diamond with strong glow
+    ctx.shadowBlur = 18 * pulse;
+    ctx.shadowColor = g.glow;
+    ctx.fillStyle = g.color;
     ctx.beginPath();
-    ctx.moveTo(0,-pr); ctx.lineTo(pr*.72,0); ctx.lineTo(0,-pr*.25);
-    ctx.closePath(); ctx.fill();
-    ctx.restore();
+    ctx.moveTo(cx, cy - pr);
+    ctx.lineTo(cx + pr * 0.78, cy);
+    ctx.lineTo(cx, cy + pr);
+    ctx.lineTo(cx - pr * 0.78, cy);
+    ctx.closePath();
+    ctx.fill();
+
+    // White outline (thick) — makes gem visible on red blocks
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = Math.max(1.6, pr * 0.13);
+    ctx.stroke();
+
+    // Top facet highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.65)';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - pr * 0.92);
+    ctx.lineTo(cx + pr * 0.55, cy);
+    ctx.lineTo(cx, cy - pr * 0.15);
+    ctx.closePath();
+    ctx.fill();
+
+    // Bright sparkle dot
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(cx - pr * 0.25, cy - pr * 0.4, pr * 0.18, 0, Math.PI * 2);
+    ctx.fill();
 }
 
 function drawCell(gx, gy, cell) {
@@ -359,16 +545,14 @@ function drawCell(gx, gy, cell) {
     ctx.fillRect(px+1, py+1, cellSize-2, cellSize-2);
     ctx.shadowBlur=0;
     if (cell.gem) {
-        // Pulse: gems breathe to attract player's eye
-        const pulse = 1 + 0.1*Math.sin(tick*0.07 + gx*0.9 + gy*1.1);
-        drawGem(px+cellSize/2, py+cellSize/2, cell.gem, cellSize*.26, pulse);
+        const pulse = 1 + 0.12*Math.sin(tick*0.07 + gx*0.9 + gy*1.1);
+        drawGem(px+cellSize/2, py+cellSize/2, cell.gem, cellSize*0.35, pulse);
     }
 }
 
 function drawPiece(p, cx, cy, scale) {
     const s = cellSize*scale;
     const offX=(p.shape[0].length*s)/2, offY=(p.shape.length*s)/2;
-    const [gr,gc]=firstCell(p.shape);
     p.shape.forEach((row,ri)=>row.forEach((cell,ci)=>{
         if (!cell) return;
         const px=cx-offX+ci*s, py=cy-offY+ri*s;
@@ -376,7 +560,8 @@ function drawPiece(p, cx, cy, scale) {
         ctx.fillStyle=p.color;
         ctx.fillRect(px+2,py+2,s-4,s-4);
         ctx.shadowBlur=0;
-        if (p.gem && ri===gr && ci===gc) drawGem(px+s/2,py+s/2,p.gem,s*.26);
+        const gem = p.gemCells.find(g => g.r===ri && g.c===ci);
+        if (gem) drawGem(px+s/2, py+s/2, gem.type, s*0.35);
     }));
 }
 
@@ -405,15 +590,13 @@ function animate() {
     ctx.beginPath(); ctx.moveTo(0,canvas.width); ctx.lineTo(canvas.width,canvas.width); ctx.stroke();
     ctx.lineWidth=1;
 
-    // Particles
     particles=particles.filter(p=>p.life>0);
     particles.forEach(p=>{p.step();p.draw();});
 
-    // Float texts
     floats=floats.filter(f=>f.life>0);
     floats.forEach(f=>{f.step();f.draw();});
 
-    // Ghost
+    // Ghost preview
     if (drag) {
         const gx=Math.round((dragX-drag.shape[0].length*cellSize/2)/cellSize);
         const gy=Math.round((dragY-drag.shape.length*cellSize/2)/cellSize);
@@ -433,10 +616,10 @@ function animate() {
         flashAlpha=Math.max(0,flashAlpha-0.04);
     }
 
-    // Tray pieces — picked piece scales up for tactile feel
+    // Tray pieces
     if (drag) dragScale=Math.min(dragScale+0.08, 1.15);
     else      dragScale=1;
-    pieces.forEach(p=>{ if(p!==drag) drawPiece(p,p.x,p.y,.65); });
+    pieces.forEach(p=>{ if(p!==drag) drawPiece(p,p.x,p.y,.6); });
     if (drag) drawPiece(drag,dragX,dragY,dragScale);
 
     requestAnimationFrame(animate);
@@ -448,23 +631,49 @@ function toC(ex,ey) {
     return [(ex-r.left)*(canvas.width/r.width), (ey-r.top)*(canvas.height/r.height)];
 }
 
-canvas.addEventListener('mousedown',  e=>down(...toC(e.clientX,e.clientY)));
-canvas.addEventListener('touchstart', e=>{e.preventDefault(); down(...toC(e.touches[0].clientX,e.touches[0].clientY));},{passive:false});
-window.addEventListener('mousemove',  e=>{ if(drag) { const[cx,cy]=toC(e.clientX,e.clientY); dragX=cx; dragY=cy; }});
-window.addEventListener('touchmove',  e=>{e.preventDefault(); if(drag){const[cx,cy]=toC(e.touches[0].clientX,e.touches[0].clientY);dragX=cx;dragY=cy;}},{passive:false});
-window.addEventListener('mouseup',  up);
-window.addEventListener('touchend', e=>{e.preventDefault();up();},{passive:false});
+// Touch handlers — only preventDefault when actively dragging,
+// so overlay buttons receive normal click events.
+canvas.addEventListener('mousedown', e => down(...toC(e.clientX,e.clientY)));
+canvas.addEventListener('touchstart', e => {
+    // Only swallow the touch if it lands on a piece in the tray
+    const [cx,cy] = toC(e.touches[0].clientX, e.touches[0].clientY);
+    if (tryStartDrag(cx, cy)) e.preventDefault();
+}, {passive:false});
 
-function down(cx,cy) {
-    if (locked) return;
+document.addEventListener('mousemove', e => {
+    if (!drag) return;
+    const [cx,cy] = toC(e.clientX, e.clientY);
+    dragX = cx; dragY = cy;
+});
+document.addEventListener('touchmove', e => {
+    if (!drag) return;
+    e.preventDefault();
+    const [cx,cy] = toC(e.touches[0].clientX, e.touches[0].clientY);
+    dragX = cx; dragY = cy;
+}, {passive:false});
+
+document.addEventListener('mouseup', up);
+document.addEventListener('touchend', e => {
+    if (!drag) return;
+    e.preventDefault();
+    up();
+}, {passive:false});
+
+function tryStartDrag(cx, cy) {
+    if (locked) return false;
     if (AC.state==='suspended') AC.resume();
-    const hit=Math.max(66,cellSize*1.3);
-    pieces.forEach(p=>{
+    const hit = Math.max(66, cellSize*1.3);
+    for (const p of pieces) {
         if (Math.abs(cx-p.x)<hit && Math.abs(cy-p.y)<hit) {
-            drag=p; dragX=cx; dragY=cy; tone(440,'sine',.06,.08);
+            drag=p; dragX=cx; dragY=cy;
+            tone(440,'sine',.06,.08);
+            return true;
         }
-    });
+    }
+    return false;
 }
+
+function down(cx, cy) { tryStartDrag(cx, cy); }
 
 function up() {
     if (!drag) return;
@@ -476,6 +685,8 @@ function up() {
         if (pieces.length===0) spawnPieces();
         checkLines();
         tone(800,'square',.1,.08);
+    } else {
+        // Snap back to original position visually (no actual data change needed)
     }
     drag=null;
 }
@@ -487,10 +698,10 @@ function canPlace(shape,x,y) {
 }
 
 function place(p,gx,gy) {
-    const [gr,gc]=firstCell(p.shape);
     p.shape.forEach((row,ri)=>row.forEach((cell,ci)=>{
         if (!cell) return;
-        grid[gy+ri][gx+ci]={color:p.color, gem:(ri===gr&&ci===gc)?p.gem:null};
+        const gem = p.gemCells.find(g => g.r===ri && g.c===ci);
+        grid[gy+ri][gx+ci]={color:p.color, gem: gem ? gem.type : null};
         for(let i=0;i<4;i++)
             particles.push(new Particle((gx+ci)*cellSize+cellSize/2,(gy+ri)*cellSize+cellSize/2,p.color));
     }));
@@ -504,19 +715,18 @@ function checkLines() {
     }
     if(!rows.length&&!cols.length) {
         combo=0; comboEl.style.opacity=0;
-        // Check game-over
-        if (isGameOver()) setTimeout(showGameOver, 300);
+        maybeGameOver();
         return;
     }
 
     combo++;
     let gemsFound=0;
-    const clearedCells=new Set();
+    const cleared=new Set();
 
     rows.forEach(r=>{
         for(let x=0;x<CELL;x++){
             const cell=grid[r][x]; if(!cell) continue;
-            clearedCells.add(`${r},${x}`);
+            cleared.add(`${r},${x}`);
             if(cell.gem) gemsFound++;
             for(let i=0;i<10;i++)
                 particles.push(new Particle(x*cellSize+cellSize/2,r*cellSize+cellSize/2,
@@ -526,7 +736,7 @@ function checkLines() {
     });
     cols.forEach(c=>{
         for(let y=0;y<CELL;y++){
-            if(clearedCells.has(`${y},${c}`)) continue;
+            if(cleared.has(`${y},${c}`)) continue;
             const cell=grid[y][c]; if(!cell) continue;
             if(cell.gem) gemsFound++;
             for(let i=0;i<10;i++)
@@ -536,84 +746,99 @@ function checkLines() {
         }
     });
 
-    const cleared=rows.length+cols.length;
-    const pts=cleared*100*combo;
-    score+=pts;
-    scoreEl.innerText=`SCORE: ${score}`;
+    const lines = rows.length + cols.length;
+    const pts = lines * 100 * combo;
+    score += pts;
+    scoreEl.innerText = `SCORE: ${score}`;
 
-    // Floating score text
-    const midX=canvas.width/2, midY=canvas.width/2;
+    const midX = canvas.width/2, midY = canvas.width/2;
     floats.push(new FloatText(midX, midY, `+${pts}`, combo>=2?'#ff00de':'#ffd700'));
 
-    // Combo display
-    comboEl.innerText=`COMBO x${combo}!`;
-    comboEl.style.opacity=1;
+    comboEl.innerText = `COMBO x${combo}!`;
+    comboEl.style.opacity = 1;
     clearTimeout(comboTimer);
-    comboTimer=setTimeout(()=>{ comboEl.style.opacity=0; },1500);
+    comboTimer = setTimeout(()=>{ comboEl.style.opacity=0; }, 1500);
 
     tone(1100+combo*80,'triangle',.2,.1);
 
-    if (gemsFound>0) {
-        gemsGot+=gemsFound;
+    if (gemsFound > 0) {
+        gemsGot += gemsFound;
         playGem();
-        flashAlpha=0.18;  // golden screen flash
+        flashAlpha = 0.22;
         updateGemUI();
         floats.push(new FloatText(midX, midY-cellSize, `💎×${gemsFound}`, '#ffd700'));
-        if (gemsGot>=gemsNeed) { locked=true; setTimeout(showClear,700); }
+        if (gemsGot >= gemsNeed) { locked = true; setTimeout(showClear, 700); return; }
     }
 
-    if (!locked && isGameOver()) setTimeout(showGameOver,300);
+    maybeGameOver();
+}
+
+function maybeGameOver() {
+    if (locked) return;
+    if (!isGameOver()) return;
+    if (tryFallback()) return;
+    setTimeout(showGameOver, 350);
 }
 
 function isGameOver() {
-    return pieces.every(p=>{
-        for(let y=0;y<=CELL-p.shape.length;y++)
-            for(let x=0;x<=CELL-p.shape[0].length;x++)
-                if(canPlace(p.shape,x,y)) return false;
+    return pieces.every(p => {
+        for (let y=0; y<=CELL-p.shape.length; y++)
+            for (let x=0; x<=CELL-p.shape[0].length; x++)
+                if (canPlace(p.shape, x, y)) return false;
         return true;
     });
 }
 
+// Rescue: if no piece fits, swap one with a 1x1 if 1x1 can be placed
+function tryFallback() {
+    const oneByOne = SHAPES.find(s => s.s.length===1 && s.s[0].length===1);
+    if (!oneByOne) return false;
+    let canFit = false;
+    for (let y=0; y<CELL && !canFit; y++)
+        for (let x=0; x<CELL && !canFit; x++)
+            if (canPlace(oneByOne.s, x, y)) canFit = true;
+    if (!canFit) return false;
+
+    const idx = 0;
+    pieces[idx] = makePiece(oneByOne, idx);
+    floats.push(new FloatText(canvas.width/2, canvas.height-cellSize*0.5, '救済ピース！', '#00f2fe'));
+    tone(1000, 'sine', 0.3, 0.1);
+    return true;
+}
+
 // ─── UI Updates ──────────────────────────────────────────
 function updateGemUI() {
-    gGotEl.textContent=gemsGot;
-    gNeedEl.textContent=gemsNeed;
-    gemIconsEl.innerHTML='';
-    const gtype=GEM_KEYS[stage%GEM_KEYS.length];
-    for(let i=0;i<gemsNeed;i++){
-        const d=document.createElement('div');
-        d.className='gem-icon'+(i<gemsGot?' lit':'');
-        d.style.backgroundColor=GEM[gtype].color;
-        d.style.color=GEM[gtype].glow;
-        gemIconsEl.appendChild(d);
-    }
+    gGotEl.textContent = Math.min(gemsGot, gemsNeed);
+    gNeedEl.textContent = gemsNeed;
+    const pct = Math.min(100, (gemsGot / gemsNeed) * 100);
+    gemBarFill.style.width = pct + '%';
 }
 
 // ─── Stage Clear ─────────────────────────────────────────
 function showClear() {
     playClear();
-    overlayScoreEl.textContent=`SCORE: ${score}`;
+    overlayScoreEl.textContent = `SCORE: ${score}`;
+    nextNeedEl.textContent = gemNeedFor(stage + 1);
     overlay.classList.add('show');
-    // Confetti burst
-    const cols=['#ffd700','#ff00de','#00f2fe','#ff4136','#2ecc71','#a29bfe'];
-    for(let i=0;i<100;i++) {
+    const cols = ['#ffd700','#ff00de','#00f2fe','#ff4136','#2ecc71','#a29bfe'];
+    for (let i=0; i<140; i++) {
         setTimeout(()=>{
             particles.push(new Particle(
                 Math.random()*canvas.width,
-                Math.random()*canvas.height*.5,
+                Math.random()*canvas.height*0.5,
                 cols[Math.floor(Math.random()*cols.length)], true
             ));
-        }, Math.random()*1200);
+        }, Math.random()*1400);
     }
 }
 
 function nextStage() {
     stage++;
-    gemsGot=0;
-    gemsNeed=Math.min(3+Math.floor(stage*1.5), 12);
-    locked=false;
+    gemsGot = 0;
+    gemsNeed = gemNeedFor(stage);
+    locked = false;
     overlay.classList.remove('show');
-    stageEl.textContent=`STAGE ${stage}`;
+    stageEl.textContent = `STAGE ${stage}`;
     initGrid();
     setupStartBlocks();
     spawnPieces();
@@ -622,14 +847,14 @@ function nextStage() {
 
 // ─── Game Over ───────────────────────────────────────────
 function showGameOver() {
-    goScoreText.textContent=`SCORE: ${score}`;
+    goScoreText.textContent = `SCORE: ${score}`;
     gameoverOverlay.classList.add('show');
 }
 
 function retryGame() {
-    score=0; combo=0; stage=1; gemsGot=0; gemsNeed=3; locked=false;
-    scoreEl.innerText='SCORE: 0';
-    stageEl.textContent='STAGE 1';
+    score = 0; combo = 0; stage = 1; gemsGot = 0; gemsNeed = gemNeedFor(1); locked = false;
+    scoreEl.innerText = 'SCORE: 0';
+    stageEl.textContent = 'STAGE 1';
     gameoverOverlay.classList.remove('show');
     initGrid();
     setupStartBlocks();
@@ -638,12 +863,12 @@ function retryGame() {
 }
 
 // ─── Resize handler ──────────────────────────────────────
-window.addEventListener('resize', ()=>{
+window.addEventListener('resize', () => {
     resize();
-    const n=pieces.length;
-    pieces.forEach((p,i)=>{
-        p.x=(canvas.width/(n+1))*(i+1);
-        p.y=canvas.width+(canvas.height-canvas.width)/2;
+    const n = pieces.length;
+    pieces.forEach((p, i) => {
+        p.x = (canvas.width / (n + 1)) * (i + 1);
+        p.y = canvas.width + (canvas.height - canvas.width) / 2;
     });
 });
 
