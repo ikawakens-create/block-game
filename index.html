@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sparkle Block Puzzle</title>
+    <style>
+        body { background: #0f0c29; color: white; font-family: 'Arial', sans-serif; text-align: center; margin: 0; overflow: hidden; touch-action: none; }
+        #ui { position: absolute; width: 100%; top: 20px; pointer-events: none; }
+        #score { font-size: 32px; font-weight: bold; color: #00f2fe; text-shadow: 0 0 10px #00f2fe; }
+        #combo { font-size: 24px; color: #ff00de; height: 30px; margin-top: 5px; opacity: 0; transition: opacity 0.3s; }
+        canvas { background: rgba(20, 20, 40, 0.8); border: 2px solid #30336b; border-radius: 15px; margin-top: 80px; box-shadow: 0 0 30px rgba(0,0,0,0.7); }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <div id="score">SCORE: 0</div>
+        <div id="combo">COMBO x1</div>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const scoreElement = document.getElementById('score');
+const comboElement = document.getElementById('combo');
+
+// 音の生成関数
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playSound(freq, type = 'sine', duration = 0.1) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+}
+
+// パーティクルクラス
+class Particle {
+    constructor(x, y, color) {
+        this.x = x; this.y = y; this.color = color;
+        this.size = Math.random() * 5 + 2;
+        this.speedX = (Math.random() - 0.5) * 10;
+        this.speedY = (Math.random() - 0.5) * 10;
+        this.life = 1.0;
+    }
+    update() {
+        this.x += this.speedX; this.y += this.speedY;
+        this.life -= 0.03;
+    }
+    draw() {
+        ctx.fillStyle = this.color;
+        ctx.globalAlpha = this.life;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+    }
+}
+
+const CELL_COUNT = 8;
+let grid = Array(CELL_COUNT).fill().map(() => Array(CELL_COUNT).fill(0));
+let particles = [];
+let score = 0;
+let combo = 0;
+let cellSize, currentPieces = [], draggingPiece = null;
+let dragX, dragY;
+
+const SHAPES = [
+    {s: [[1,1],[1,1]], c: '#FF4136'}, {s: [[1,1,1]], c: '#2ECC40'},
+    {s: [[1],[1],[1]], c: '#0074D9'}, {s: [[1]], c: '#FFDC00'},
+    {s: [[1,1,1],[0,1,0]], c: '#B10DC9'}, {s: [[1,1],[1,0],[1,0]], c: '#FF851B'}
+];
+
+function init() {
+    resize();
+    spawnPieces();
+    animate();
+}
+
+function resize() {
+    const size = Math.min(window.innerWidth * 0.95, 500);
+    canvas.width = size;
+    canvas.height = size * 1.4;
+    cellSize = size / CELL_COUNT;
+}
+
+function spawnPieces() {
+    currentPieces = [];
+    for (let i = 0; i < 3; i++) {
+        const item = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+        currentPieces.push({
+            shape: item.s, color: item.c,
+            x: (canvas.width / 3) * i + (canvas.width / 6),
+            y: canvas.width + (canvas.height - canvas.width) / 2,
+            originalX: (canvas.width / 3) * i + (canvas.width / 6),
+            originalY: canvas.width + (canvas.height - canvas.width) / 2
+        });
+    }
+}
+
+function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // グリッド描画
+    for (let y = 0; y < CELL_COUNT; y++) {
+        for (let x = 0; x < CELL_COUNT; x++) {
+            ctx.fillStyle = grid[y][x] || '#1e272e';
+            ctx.fillRect(x * cellSize + 1, y * cellSize + 1, cellSize - 2, cellSize - 2);
+            if (!grid[y][x]) {
+                ctx.strokeStyle = '#34495e';
+                ctx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
+            }
+        }
+    }
+
+    // パーティクル更新
+    particles = particles.filter(p => p.life > 0);
+    particles.forEach(p => { p.update(); p.draw(); });
+
+    // 持ち駒描画
+    currentPieces.forEach(p => {
+        if (p === draggingPiece) return;
+        drawPiece(p, p.x, p.y, 0.6);
+    });
+    if (draggingPiece) drawPiece(draggingPiece, dragX, dragY, 1.0);
+
+    requestAnimationFrame(animate);
+}
+
+function drawPiece(p, x, y, scale) {
+    const s = cellSize * scale;
+    const offX = (p.shape[0].length * s) / 2;
+    const offY = (p.shape.length * s) / 2;
+    ctx.fillStyle = p.color;
+    ctx.shadowBlur = 10; ctx.shadowColor = p.color;
+    p.shape.forEach((row, ri) => row.forEach((cell, ci) => {
+        if (cell) ctx.fillRect(x - offX + ci * s + 2, y - offY + ri * s + 2, s - 4, s - 4);
+    }));
+    ctx.shadowBlur = 0;
+}
+
+// 操作処理
+canvas.addEventListener('mousedown', e => start(e.clientX, e.clientY));
+canvas.addEventListener('touchstart', e => start(e.touches[0].clientX, e.touches[0].clientY));
+window.addEventListener('mousemove', e => move(e.clientX, e.clientY));
+window.addEventListener('touchmove', e => move(e.touches[0].clientX, e.touches[0].clientY));
+window.addEventListener('mouseup', end);
+window.addEventListener('touchend', end);
+
+function start(ex, ey) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const rect = canvas.getBoundingClientRect();
+    const x = ex - rect.left, y = ey - rect.top;
+    currentPieces.forEach(p => {
+        if (Math.abs(x - p.x) < 50 && Math.abs(y - p.y) < 50) {
+            draggingPiece = p; dragX = x; dragY = y;
+            playSound(440, 'sine', 0.05);
+        }
+    });
+}
+
+function move(ex, ey) {
+    if (!draggingPiece) return;
+    const rect = canvas.getBoundingClientRect();
+    dragX = ex - rect.left; dragY = ey - rect.top;
+}
+
+function end() {
+    if (!draggingPiece) return;
+    const gx = Math.round((dragX - (draggingPiece.shape[0].length * cellSize / 2)) / cellSize);
+    const gy = Math.round((dragY - (draggingPiece.shape.length * cellSize / 2)) / cellSize);
+
+    if (canPlace(draggingPiece.shape, gx, gy)) {
+        placePiece(draggingPiece, gx, gy);
+        currentPieces = currentPieces.filter(p => p !== draggingPiece);
+        if (currentPieces.length === 0) spawnPieces();
+        checkLines();
+        playSound(880, 'square', 0.1);
+    }
+    draggingPiece = null;
+}
+
+function canPlace(shape, x, y) {
+    if (x < 0 || y < 0 || x + shape[0].length > CELL_COUNT || y + shape.length > CELL_COUNT) return false;
+    return shape.every((row, ri) => row.every((cell, ci) => !cell || !grid[y+ri][x+ci]));
+}
+
+function placePiece(p, x, y) {
+    p.shape.forEach((row, ri) => row.forEach((cell, ci) => {
+        if (cell) {
+            grid[y+ri][x+ci] = p.color;
+            for(let i=0; i<5; i++) particles.push(new Particle((x+ci)*cellSize+cellSize/2, (y+ri)*cellSize+cellSize/2, p.color));
+        }
+    }));
+}
+
+function checkLines() {
+    let rows = [], cols = [];
+    for(let i=0; i<CELL_COUNT; i++) {
+        if (grid[i].every(c => c)) rows.push(i);
+        if (grid.map(r => r[i]).every(c => c)) cols.push(i);
+    }
+    
+    if (rows.length + cols.length > 0) {
+        combo++;
+        rows.forEach(r => {
+            for(let x=0; x<CELL_COUNT; x++) {
+                for(let i=0; i<10; i++) particles.push(new Particle(x*cellSize+cellSize/2, r*cellSize+cellSize/2, grid[r][x]));
+                grid[r].fill(0);
+            }
+        });
+        cols.forEach(c => {
+            for(let y=0; y<CELL_COUNT; y++) {
+                for(let i=0; i<10; i++) particles.push(new Particle(c*cellSize+cellSize/2, y*cellSize+cellSize/2, grid[y][c]));
+                for(let y=0; y<CELL_COUNT; y++) grid[y][c] = 0;
+            }
+        });
+        score += (rows.length + cols.length) * 100 * combo;
+        scoreElement.innerText = `SCORE: ${score}`;
+        comboElement.innerText = `COMBO x${combo}!`;
+        comboElement.style.opacity = 1;
+        playSound(1200 + (combo * 100), 'triangle', 0.2);
+    } else {
+        combo = 0;
+        comboElement.style.opacity = 0;
+    }
+}
+
+init();
+</script>
+</body>
+</html>
