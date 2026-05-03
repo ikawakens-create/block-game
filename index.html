@@ -3,250 +3,658 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sparkle Block Puzzle</title>
+    <title>✨ Gem Block Puzzle</title>
     <style>
-        body { background: #0f0c29; color: white; font-family: 'Arial', sans-serif; text-align: center; margin: 0; overflow: hidden; touch-action: none; }
-        #ui { position: absolute; width: 100%; top: 20px; pointer-events: none; }
-        #score { font-size: 32px; font-weight: bold; color: #00f2fe; text-shadow: 0 0 10px #00f2fe; }
-        #combo { font-size: 24px; color: #ff00de; height: 30px; margin-top: 5px; opacity: 0; transition: opacity 0.3s; }
-        canvas { background: rgba(20, 20, 40, 0.8); border: 2px solid #30336b; border-radius: 15px; margin-top: 80px; box-shadow: 0 0 30px rgba(0,0,0,0.7); }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #0a0820;
+            color: white;
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        #top-ui {
+            padding: 6px 16px 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        #score { font-size: 20px; font-weight: bold; color: #00f2fe; text-shadow: 0 0 10px #00f2fe; }
+        #stage-label { font-size: 18px; font-weight: bold; color: #ffd700; text-shadow: 0 0 8px #ffd700; }
+        #gem-bar-row {
+            padding: 0 12px 2px;
+            flex-shrink: 0;
+        }
+        #gem-goal-text {
+            font-size: 13px;
+            color: #aaa;
+            margin-bottom: 4px;
+        }
+        #gem-goal-text span { color: #fff; font-weight: bold; }
+        #gem-icons {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            min-height: 22px;
+            flex-wrap: wrap;
+        }
+        .gem-icon {
+            width: 18px;
+            height: 18px;
+            transform: rotate(45deg);
+            border-radius: 3px;
+            opacity: 0.25;
+            transition: opacity 0.25s, box-shadow 0.25s;
+            flex-shrink: 0;
+        }
+        .gem-icon.lit {
+            opacity: 1;
+            box-shadow: 0 0 8px currentColor;
+        }
+        #combo-row {
+            font-size: 17px;
+            font-weight: bold;
+            color: #ff00de;
+            height: 21px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            flex-shrink: 0;
+            text-shadow: 0 0 8px #ff00de;
+        }
+        #canvas-wrap {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 0;
+            padding: 0 4px 4px;
+        }
+        canvas {
+            background: rgba(15, 18, 35, 0.95);
+            border: 2px solid #30336b;
+            border-radius: 12px;
+            box-shadow: 0 0 40px rgba(0, 114, 255, 0.2);
+            display: block;
+            touch-action: none;
+        }
+        #overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 50;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #overlay.show { display: flex; }
+        #overlay-title {
+            font-size: 40px;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 0 0 20px #ffd700, 0 0 60px #ffa500;
+            animation: pop 0.4s ease-out;
+        }
+        #overlay-sub { font-size: 15px; color: #aaa; margin: 6px 0 4px; }
+        #overlay-score { font-size: 24px; font-weight: bold; color: #fff; margin-bottom: 22px; }
+        #next-btn {
+            padding: 14px 48px;
+            font-size: 22px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #00f2fe 0%, #9b00ff 100%);
+            border: none;
+            border-radius: 40px;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 6px 24px rgba(155, 0, 255, 0.5);
+            -webkit-tap-highlight-color: transparent;
+            letter-spacing: 1px;
+        }
+        #gameover-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 50;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #gameover-overlay.show { display: flex; }
+        #gameover-overlay h1 { font-size: 38px; color: #ff4757; text-shadow: 0 0 20px #ff4757; }
+        #gameover-overlay .go-score { font-size: 22px; margin: 10px 0 24px; }
+        #retry-btn {
+            padding: 14px 48px;
+            font-size: 20px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #ff4757, #ff6b81);
+            border: none;
+            border-radius: 40px;
+            color: white;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        @keyframes pop {
+            0%   { transform: scale(0.5); opacity: 0; }
+            70%  { transform: scale(1.12); }
+            100% { transform: scale(1); opacity: 1; }
+        }
     </style>
 </head>
 <body>
-    <div id="ui">
-        <div id="score">SCORE: 0</div>
-        <div id="combo">COMBO x1</div>
-    </div>
+
+<div id="top-ui">
+    <div id="score">SCORE: 0</div>
+    <div id="stage-label">STAGE 1</div>
+</div>
+<div id="gem-bar-row">
+    <div id="gem-goal-text">💎 宝石を <span id="g-got">0</span> / <span id="g-need">3</span> こ集めよう！</div>
+    <div id="gem-icons"></div>
+</div>
+<div id="combo-row" id="combo-row">COMBO x2!</div>
+<div id="canvas-wrap">
     <canvas id="gameCanvas"></canvas>
+</div>
+
+<div id="overlay">
+    <div id="overlay-title">✨ STAGE CLEAR! ✨</div>
+    <div id="overlay-sub">ステージクリア！</div>
+    <div id="overlay-score">SCORE: 0</div>
+    <button id="next-btn" onclick="nextStage()">つぎへ ▶</button>
+</div>
+
+<div id="gameover-overlay">
+    <h1>GAME OVER</h1>
+    <div class="go-score" id="go-score-text">SCORE: 0</div>
+    <button id="retry-btn" onclick="retryGame()">もういちど ↩</button>
+</div>
 
 <script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const scoreElement = document.getElementById('score');
-const comboElement = document.getElementById('combo');
+const canvas  = document.getElementById('gameCanvas');
+const ctx     = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const stageEl = document.getElementById('stage-label');
+const comboEl = document.getElementById('combo-row');
+const gGotEl  = document.getElementById('g-got');
+const gNeedEl = document.getElementById('g-need');
+const gemIconsEl = document.getElementById('gem-icons');
+const overlay    = document.getElementById('overlay');
+const overlayScoreEl = document.getElementById('overlay-score');
+const gameoverOverlay = document.getElementById('gameover-overlay');
+const goScoreText = document.getElementById('go-score-text');
 
-// 音の生成関数
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-function playSound(freq, type = 'sine', duration = 0.1) {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + duration);
+// ─── Audio ──────────────────────────────────────────────
+const AC = new (window.AudioContext || window.webkitAudioContext)();
+function tone(freq, type = 'sine', dur = 0.12, vol = 0.09) {
+    try {
+        const o = AC.createOscillator(), g = AC.createGain();
+        o.type = type; o.frequency.value = freq;
+        g.gain.setValueAtTime(vol, AC.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime + dur);
+        o.connect(g); g.connect(AC.destination);
+        o.start(); o.stop(AC.currentTime + dur);
+    } catch(e) {}
+}
+function playClear() {
+    [523,659,784,1047,1319,1568].forEach((f,i) => setTimeout(()=>tone(f,'triangle',0.35,0.12), i*90));
+}
+function playGem() {
+    tone(1200,'sine',0.1,0.1); setTimeout(()=>tone(1600,'sine',0.15,0.08),80);
 }
 
-// パーティクルクラス
+// ─── Particles ──────────────────────────────────────────
 class Particle {
-    constructor(x, y, color) {
-        this.x = x; this.y = y; this.color = color;
-        this.size = Math.random() * 5 + 2;
-        this.speedX = (Math.random() - 0.5) * 10;
-        this.speedY = (Math.random() - 0.5) * 10;
-        this.life = 1.0;
+    constructor(x, y, color, big=false) {
+        this.x=x; this.y=y; this.color=color;
+        this.r = big ? Math.random()*7+4 : Math.random()*4+1.5;
+        const s = big ? 11 : 7;
+        this.vx=(Math.random()-.5)*s; this.vy=(Math.random()-.5)*s-(big?3:1);
+        this.life=1; this.decay=big?0.016:0.026; this.g=0.22;
     }
-    update() {
-        this.x += this.speedX; this.y += this.speedY;
-        this.life -= 0.03;
-    }
+    step() { this.x+=this.vx; this.y+=this.vy; this.vy+=this.g; this.life-=this.decay; }
     draw() {
-        ctx.fillStyle = this.color;
-        ctx.globalAlpha = this.life;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalAlpha = 1.0;
+        ctx.globalAlpha=Math.max(0,this.life);
+        ctx.fillStyle=this.color;
+        ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.fill();
+        ctx.globalAlpha=1;
     }
 }
 
-const CELL_COUNT = 8;
-let grid = Array(CELL_COUNT).fill().map(() => Array(CELL_COUNT).fill(0));
-let particles = [];
-let score = 0;
-let combo = 0;
-let cellSize, currentPieces = [], draggingPiece = null;
-let dragX, dragY;
+// Floating score text
+class FloatText {
+    constructor(x, y, txt, color='#ffd700') {
+        this.x=x; this.y=y; this.txt=txt; this.color=color;
+        this.life=1; this.vy=-1.8;
+    }
+    step() { this.y+=this.vy; this.life-=0.022; }
+    draw() {
+        ctx.globalAlpha=Math.max(0,this.life);
+        ctx.fillStyle=this.color;
+        ctx.font=`bold ${Math.max(14,Math.floor(cellSize*0.55))}px Arial`;
+        ctx.textAlign='center';
+        ctx.shadowBlur=8; ctx.shadowColor=this.color;
+        ctx.fillText(this.txt, this.x, this.y);
+        ctx.shadowBlur=0; ctx.textAlign='left'; ctx.globalAlpha=1;
+    }
+}
+
+// ─── Constants ──────────────────────────────────────────
+const CELL = 8;
+
+const GEM = {
+    ruby:     {color:'#ff4757', glow:'#ff6b81'},
+    sapphire: {color:'#54a0ff', glow:'#74b9ff'},
+    emerald:  {color:'#2ecc71', glow:'#55efc4'},
+    gold:     {color:'#ffd700', glow:'#fff200'},
+};
+const GEM_KEYS = ['ruby','sapphire','emerald','gold'];
 
 const SHAPES = [
-    {s: [[1,1],[1,1]], c: '#FF4136'}, {s: [[1,1,1]], c: '#2ECC40'},
-    {s: [[1],[1],[1]], c: '#0074D9'}, {s: [[1]], c: '#FFDC00'},
-    {s: [[1,1,1],[0,1,0]], c: '#B10DC9'}, {s: [[1,1],[1,0],[1,0]], c: '#FF851B'}
+    {s:[[1,1],[1,1]],       c:'#e74c3c', gem:null},
+    {s:[[1,1,1]],           c:'#2ecc71', gem:'ruby'},
+    {s:[[1],[1],[1]],       c:'#3498db', gem:'sapphire'},
+    {s:[[1]],               c:'#f1c40f', gem:null},
+    {s:[[1,1,1],[0,1,0]],   c:'#9b59b6', gem:'emerald'},
+    {s:[[1,1],[1,0],[1,0]], c:'#e67e22', gem:null},
+    {s:[[1,1,0],[0,1,1]],   c:'#1abc9c', gem:'sapphire'},
+    {s:[[0,1,1],[1,1,0]],   c:'#e74c3c', gem:'ruby'},
+    {s:[[1,1,1,1]],         c:'#00cec9', gem:null},
+    {s:[[1],[1],[1],[1]],   c:'#fd79a8', gem:null},
+    {s:[[1,1,1],[1,0,0]],   c:'#6c5ce7', gem:'gold'},
+    {s:[[1,1],[0,1],[0,1]], c:'#fdcb6e', gem:'emerald'},
+    {s:[[1,1,1],[0,0,1]],   c:'#00b894', gem:'gold'},
+    {s:[[1,0],[1,1],[0,1]], c:'#a29bfe', gem:null},
 ];
 
-function init() {
-    resize();
-    spawnPieces();
-    animate();
+// ─── State ──────────────────────────────────────────────
+let grid, cellSize, particles=[], floats=[];
+let pieces=[], drag=null, dragX=0, dragY=0;
+let dragScale=1;  // piece scale while dragging
+let score=0, combo=0, comboTimer=null;
+let stage=1, gemsGot=0, gemsNeed=3;
+let locked=false;
+let flashAlpha=0; // screen flash on gem collect
+
+// ─── Grid ────────────────────────────────────────────────
+function initGrid() {
+    grid = Array(CELL).fill(null).map(()=>Array(CELL).fill(null));
 }
 
+function setupStartBlocks() {
+    // Dark starter blocks — almost-complete rows for instant gratification
+    const C = ['#3a3a5c','#2e3d5c','#2e4a3a','#4a3a2e'];
+    // Row 7 (bottom): 7/8 filled → 1 piece fills it instantly
+    [0,1,2,3,4,5,6].forEach(x => setCell(7,x,C[x%4]));
+    // Row 6: 6/8 filled
+    [0,1,2,4,5,7].forEach(x => setCell(6,x,C[x%4]));
+    // Row 5: partial
+    [0,1,4,5].forEach(x => setCell(5,x,C[x%4]));
+}
+function setCell(row,col,color,gem=null) {
+    grid[row][col] = {color, gem};
+}
+
+// ─── Resize ──────────────────────────────────────────────
 function resize() {
-    const size = Math.min(window.innerWidth * 0.95, 500);
-    canvas.width = size;
-    canvas.height = size * 1.4;
-    cellSize = size / CELL_COUNT;
+    const wrap = document.getElementById('canvas-wrap');
+    const avW = wrap.clientWidth - 8;
+    const avH = wrap.clientHeight - 8;
+    const byH = avH / 1.28;
+    const size = Math.floor(Math.min(avW, byH, 490));
+    canvas.width  = size;
+    canvas.height = Math.floor(size * 1.28);
+    cellSize = size / CELL;
 }
 
+// ─── Pieces ──────────────────────────────────────────────
 function spawnPieces() {
-    currentPieces = [];
-    for (let i = 0; i < 3; i++) {
-        const item = SHAPES[Math.floor(Math.random() * SHAPES.length)];
-        currentPieces.push({
-            shape: item.s, color: item.c,
-            x: (canvas.width / 3) * i + (canvas.width / 6),
-            y: canvas.width + (canvas.height - canvas.width) / 2,
-            originalX: (canvas.width / 3) * i + (canvas.width / 6),
-            originalY: canvas.width + (canvas.height - canvas.width) / 2
-        });
+    pieces = [];
+    for (let i=0; i<3; i++) {
+        const t = SHAPES[Math.floor(Math.random()*SHAPES.length)];
+        const px = (canvas.width/3)*i + canvas.width/6;
+        const py = canvas.width + (canvas.height-canvas.width)/2;
+        pieces.push({shape:t.s, color:t.c, gem:t.gem, x:px, y:py});
     }
 }
 
+function firstCell(shape) {
+    for (let r=0;r<shape.length;r++)
+        for (let c=0;c<shape[r].length;c++)
+            if (shape[r][c]) return [r,c];
+    return [0,0];
+}
+
+// ─── Drawing ─────────────────────────────────────────────
+function drawGem(cx, cy, type, r, pulse=1) {
+    const g = GEM[type];
+    const pr = r * pulse;
+    ctx.save(); ctx.translate(cx,cy);
+    ctx.shadowBlur=16*pulse; ctx.shadowColor=g.glow;
+    ctx.fillStyle=g.color;
+    ctx.beginPath();
+    ctx.moveTo(0,-pr); ctx.lineTo(pr*.72,0); ctx.lineTo(0,pr); ctx.lineTo(-pr*.72,0);
+    ctx.closePath(); ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.fillStyle='rgba(255,255,255,0.58)';
+    ctx.beginPath();
+    ctx.moveTo(0,-pr); ctx.lineTo(pr*.72,0); ctx.lineTo(0,-pr*.25);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+}
+
+function drawCell(gx, gy, cell) {
+    const px=gx*cellSize, py=gy*cellSize;
+    if (cell.gem) {
+        ctx.shadowBlur=10; ctx.shadowColor=GEM[cell.gem].glow;
+    }
+    ctx.fillStyle=cell.color;
+    ctx.fillRect(px+1, py+1, cellSize-2, cellSize-2);
+    ctx.shadowBlur=0;
+    if (cell.gem) {
+        // Pulse: gems breathe to attract player's eye
+        const pulse = 1 + 0.1*Math.sin(tick*0.07 + gx*0.9 + gy*1.1);
+        drawGem(px+cellSize/2, py+cellSize/2, cell.gem, cellSize*.26, pulse);
+    }
+}
+
+function drawPiece(p, cx, cy, scale) {
+    const s = cellSize*scale;
+    const offX=(p.shape[0].length*s)/2, offY=(p.shape.length*s)/2;
+    const [gr,gc]=firstCell(p.shape);
+    p.shape.forEach((row,ri)=>row.forEach((cell,ci)=>{
+        if (!cell) return;
+        const px=cx-offX+ci*s, py=cy-offY+ri*s;
+        ctx.shadowBlur=9; ctx.shadowColor=p.color;
+        ctx.fillStyle=p.color;
+        ctx.fillRect(px+2,py+2,s-4,s-4);
+        ctx.shadowBlur=0;
+        if (p.gem && ri===gr && ci===gc) drawGem(px+s/2,py+s/2,p.gem,s*.26);
+    }));
+}
+
+// ─── Animation loop ──────────────────────────────────────
+let tick=0;
 function animate() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // グリッド描画
-    for (let y = 0; y < CELL_COUNT; y++) {
-        for (let x = 0; x < CELL_COUNT; x++) {
-            ctx.fillStyle = grid[y][x] || '#1e272e';
-            ctx.fillRect(x * cellSize + 1, y * cellSize + 1, cellSize - 2, cellSize - 2);
-            if (!grid[y][x]) {
-                ctx.strokeStyle = '#34495e';
-                ctx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
-            }
+    tick++;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // Grid
+    for (let y=0;y<CELL;y++) for (let x=0;x<CELL;x++) {
+        const cell=grid[y][x];
+        if (cell) {
+            drawCell(x,y,cell);
+        } else {
+            ctx.fillStyle='#111828';
+            ctx.fillRect(x*cellSize+1,y*cellSize+1,cellSize-2,cellSize-2);
+            ctx.strokeStyle='#1e2d40';
+            ctx.lineWidth=1;
+            ctx.strokeRect(x*cellSize+.5,y*cellSize+.5,cellSize,cellSize);
         }
     }
 
-    // パーティクル更新
-    particles = particles.filter(p => p.life > 0);
-    particles.forEach(p => { p.update(); p.draw(); });
+    // Divider
+    ctx.strokeStyle='#30336b'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(0,canvas.width); ctx.lineTo(canvas.width,canvas.width); ctx.stroke();
+    ctx.lineWidth=1;
 
-    // ドラッグ中のゴースト（配置プレビュー）
-    if (draggingPiece) {
-        const gx = Math.round((dragX - (draggingPiece.shape[0].length * cellSize / 2)) / cellSize);
-        const gy = Math.round((dragY - (draggingPiece.shape.length * cellSize / 2)) / cellSize);
-        if (canPlace(draggingPiece.shape, gx, gy)) {
-            ctx.globalAlpha = 0.35;
-            draggingPiece.shape.forEach((row, ri) => row.forEach((cell, ci) => {
-                if (cell) {
-                    ctx.fillStyle = draggingPiece.color;
-                    ctx.fillRect((gx+ci)*cellSize+1, (gy+ri)*cellSize+1, cellSize-2, cellSize-2);
-                }
+    // Particles
+    particles=particles.filter(p=>p.life>0);
+    particles.forEach(p=>{p.step();p.draw();});
+
+    // Float texts
+    floats=floats.filter(f=>f.life>0);
+    floats.forEach(f=>{f.step();f.draw();});
+
+    // Ghost
+    if (drag) {
+        const gx=Math.round((dragX-drag.shape[0].length*cellSize/2)/cellSize);
+        const gy=Math.round((dragY-drag.shape.length*cellSize/2)/cellSize);
+        if (canPlace(drag.shape,gx,gy)) {
+            ctx.globalAlpha=.35;
+            drag.shape.forEach((row,ri)=>row.forEach((cell,ci)=>{
+                if (cell) { ctx.fillStyle=drag.color; ctx.fillRect((gx+ci)*cellSize+1,(gy+ri)*cellSize+1,cellSize-2,cellSize-2); }
             }));
-            ctx.globalAlpha = 1.0;
+            ctx.globalAlpha=1;
         }
     }
 
-    // 持ち駒描画
-    currentPieces.forEach(p => {
-        if (p === draggingPiece) return;
-        drawPiece(p, p.x, p.y, 0.6);
-    });
-    if (draggingPiece) drawPiece(draggingPiece, dragX, dragY, 1.0);
+    // Screen flash on gem collect
+    if (flashAlpha>0) {
+        ctx.fillStyle=`rgba(255,215,0,${flashAlpha})`;
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        flashAlpha=Math.max(0,flashAlpha-0.04);
+    }
+
+    // Tray pieces — picked piece scales up for tactile feel
+    if (drag) dragScale=Math.min(dragScale+0.08, 1.15);
+    else      dragScale=1;
+    pieces.forEach(p=>{ if(p!==drag) drawPiece(p,p.x,p.y,.65); });
+    if (drag) drawPiece(drag,dragX,dragY,dragScale);
 
     requestAnimationFrame(animate);
 }
 
-function drawPiece(p, x, y, scale) {
-    const s = cellSize * scale;
-    const offX = (p.shape[0].length * s) / 2;
-    const offY = (p.shape.length * s) / 2;
-    ctx.fillStyle = p.color;
-    ctx.shadowBlur = 10; ctx.shadowColor = p.color;
-    p.shape.forEach((row, ri) => row.forEach((cell, ci) => {
-        if (cell) ctx.fillRect(x - offX + ci * s + 2, y - offY + ri * s + 2, s - 4, s - 4);
-    }));
-    ctx.shadowBlur = 0;
+// ─── Controls ────────────────────────────────────────────
+function toC(ex,ey) {
+    const r=canvas.getBoundingClientRect();
+    return [(ex-r.left)*(canvas.width/r.width), (ey-r.top)*(canvas.height/r.height)];
 }
 
-// 操作処理
-canvas.addEventListener('mousedown', e => start(e.clientX, e.clientY));
-canvas.addEventListener('touchstart', e => { e.preventDefault(); start(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
-window.addEventListener('mousemove', e => move(e.clientX, e.clientY));
-window.addEventListener('touchmove', e => { e.preventDefault(); move(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
-window.addEventListener('mouseup', end);
-window.addEventListener('touchend', e => { e.preventDefault(); end(); }, { passive: false });
+canvas.addEventListener('mousedown',  e=>down(...toC(e.clientX,e.clientY)));
+canvas.addEventListener('touchstart', e=>{e.preventDefault(); down(...toC(e.touches[0].clientX,e.touches[0].clientY));},{passive:false});
+window.addEventListener('mousemove',  e=>{ if(drag) { const[cx,cy]=toC(e.clientX,e.clientY); dragX=cx; dragY=cy; }});
+window.addEventListener('touchmove',  e=>{e.preventDefault(); if(drag){const[cx,cy]=toC(e.touches[0].clientX,e.touches[0].clientY);dragX=cx;dragY=cy;}},{passive:false});
+window.addEventListener('mouseup',  up);
+window.addEventListener('touchend', e=>{e.preventDefault();up();},{passive:false});
 
-function start(ex, ey) {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    const rect = canvas.getBoundingClientRect();
-    const x = ex - rect.left, y = ey - rect.top;
-    const hitRadius = Math.max(60, cellSize * 1.2);
-    currentPieces.forEach(p => {
-        if (Math.abs(x - p.x) < hitRadius && Math.abs(y - p.y) < hitRadius) {
-            draggingPiece = p; dragX = x; dragY = y;
-            playSound(440, 'sine', 0.05);
+function down(cx,cy) {
+    if (locked) return;
+    if (AC.state==='suspended') AC.resume();
+    const hit=Math.max(66,cellSize*1.3);
+    pieces.forEach(p=>{
+        if (Math.abs(cx-p.x)<hit && Math.abs(cy-p.y)<hit) {
+            drag=p; dragX=cx; dragY=cy; tone(440,'sine',.06,.08);
         }
     });
 }
 
-function move(ex, ey) {
-    if (!draggingPiece) return;
-    const rect = canvas.getBoundingClientRect();
-    dragX = ex - rect.left; dragY = ey - rect.top;
-}
-
-function end() {
-    if (!draggingPiece) return;
-    const gx = Math.round((dragX - (draggingPiece.shape[0].length * cellSize / 2)) / cellSize);
-    const gy = Math.round((dragY - (draggingPiece.shape.length * cellSize / 2)) / cellSize);
-
-    if (canPlace(draggingPiece.shape, gx, gy)) {
-        placePiece(draggingPiece, gx, gy);
-        currentPieces = currentPieces.filter(p => p !== draggingPiece);
-        if (currentPieces.length === 0) spawnPieces();
+function up() {
+    if (!drag) return;
+    const gx=Math.round((dragX-drag.shape[0].length*cellSize/2)/cellSize);
+    const gy=Math.round((dragY-drag.shape.length*cellSize/2)/cellSize);
+    if (canPlace(drag.shape,gx,gy)) {
+        place(drag,gx,gy);
+        pieces=pieces.filter(p=>p!==drag);
+        if (pieces.length===0) spawnPieces();
         checkLines();
-        playSound(880, 'square', 0.1);
+        tone(800,'square',.1,.08);
     }
-    draggingPiece = null;
+    drag=null;
 }
 
-function canPlace(shape, x, y) {
-    if (x < 0 || y < 0 || x + shape[0].length > CELL_COUNT || y + shape.length > CELL_COUNT) return false;
-    return shape.every((row, ri) => row.every((cell, ci) => !cell || !grid[y+ri][x+ci]));
+// ─── Game Logic ──────────────────────────────────────────
+function canPlace(shape,x,y) {
+    if (x<0||y<0||x+shape[0].length>CELL||y+shape.length>CELL) return false;
+    return shape.every((row,ri)=>row.every((c,ci)=>!c||!grid[y+ri][x+ci]));
 }
 
-function placePiece(p, x, y) {
-    p.shape.forEach((row, ri) => row.forEach((cell, ci) => {
-        if (cell) {
-            grid[y+ri][x+ci] = p.color;
-            for(let i=0; i<5; i++) particles.push(new Particle((x+ci)*cellSize+cellSize/2, (y+ri)*cellSize+cellSize/2, p.color));
-        }
+function place(p,gx,gy) {
+    const [gr,gc]=firstCell(p.shape);
+    p.shape.forEach((row,ri)=>row.forEach((cell,ci)=>{
+        if (!cell) return;
+        grid[gy+ri][gx+ci]={color:p.color, gem:(ri===gr&&ci===gc)?p.gem:null};
+        for(let i=0;i<4;i++)
+            particles.push(new Particle((gx+ci)*cellSize+cellSize/2,(gy+ri)*cellSize+cellSize/2,p.color));
     }));
 }
 
 function checkLines() {
-    let rows = [], cols = [];
-    for(let i=0; i<CELL_COUNT; i++) {
-        if (grid[i].every(c => c)) rows.push(i);
-        if (grid.map(r => r[i]).every(c => c)) cols.push(i);
+    let rows=[], cols=[];
+    for(let i=0;i<CELL;i++){
+        if(grid[i].every(c=>c)) rows.push(i);
+        if(grid.map(r=>r[i]).every(c=>c)) cols.push(i);
     }
-    
-    if (rows.length + cols.length > 0) {
-        combo++;
-        rows.forEach(r => {
-            for(let x=0; x<CELL_COUNT; x++) {
-                for(let i=0; i<10; i++) particles.push(new Particle(x*cellSize+cellSize/2, r*cellSize+cellSize/2, grid[r][x]));
-                grid[r].fill(0);
-            }
-        });
-        cols.forEach(c => {
-            for(let y=0; y<CELL_COUNT; y++) {
-                for(let i=0; i<10; i++) particles.push(new Particle(c*cellSize+cellSize/2, y*cellSize+cellSize/2, grid[y][c]));
-                for(let y=0; y<CELL_COUNT; y++) grid[y][c] = 0;
-            }
-        });
-        score += (rows.length + cols.length) * 100 * combo;
-        scoreElement.innerText = `SCORE: ${score}`;
-        comboElement.innerText = `COMBO x${combo}!`;
-        comboElement.style.opacity = 1;
-        playSound(1200 + (combo * 100), 'triangle', 0.2);
-    } else {
-        combo = 0;
-        comboElement.style.opacity = 0;
+    if(!rows.length&&!cols.length) {
+        combo=0; comboEl.style.opacity=0;
+        // Check game-over
+        if (isGameOver()) setTimeout(showGameOver, 300);
+        return;
     }
+
+    combo++;
+    let gemsFound=0;
+    const clearedCells=new Set();
+
+    rows.forEach(r=>{
+        for(let x=0;x<CELL;x++){
+            const cell=grid[r][x]; if(!cell) continue;
+            clearedCells.add(`${r},${x}`);
+            if(cell.gem) gemsFound++;
+            for(let i=0;i<10;i++)
+                particles.push(new Particle(x*cellSize+cellSize/2,r*cellSize+cellSize/2,
+                    cell.gem?GEM[cell.gem].glow:cell.color, !!cell.gem));
+            grid[r][x]=null;
+        }
+    });
+    cols.forEach(c=>{
+        for(let y=0;y<CELL;y++){
+            if(clearedCells.has(`${y},${c}`)) continue;
+            const cell=grid[y][c]; if(!cell) continue;
+            if(cell.gem) gemsFound++;
+            for(let i=0;i<10;i++)
+                particles.push(new Particle(c*cellSize+cellSize/2,y*cellSize+cellSize/2,
+                    cell.gem?GEM[cell.gem].glow:cell.color, !!cell.gem));
+            grid[y][c]=null;
+        }
+    });
+
+    const cleared=rows.length+cols.length;
+    const pts=cleared*100*combo;
+    score+=pts;
+    scoreEl.innerText=`SCORE: ${score}`;
+
+    // Floating score text
+    const midX=canvas.width/2, midY=canvas.width/2;
+    floats.push(new FloatText(midX, midY, `+${pts}`, combo>=2?'#ff00de':'#ffd700'));
+
+    // Combo display
+    comboEl.innerText=`COMBO x${combo}!`;
+    comboEl.style.opacity=1;
+    clearTimeout(comboTimer);
+    comboTimer=setTimeout(()=>{ comboEl.style.opacity=0; },1500);
+
+    tone(1100+combo*80,'triangle',.2,.1);
+
+    if (gemsFound>0) {
+        gemsGot+=gemsFound;
+        playGem();
+        flashAlpha=0.18;  // golden screen flash
+        updateGemUI();
+        floats.push(new FloatText(midX, midY-cellSize, `💎×${gemsFound}`, '#ffd700'));
+        if (gemsGot>=gemsNeed) { locked=true; setTimeout(showClear,700); }
+    }
+
+    if (!locked && isGameOver()) setTimeout(showGameOver,300);
+}
+
+function isGameOver() {
+    return pieces.every(p=>{
+        for(let y=0;y<=CELL-p.shape.length;y++)
+            for(let x=0;x<=CELL-p.shape[0].length;x++)
+                if(canPlace(p.shape,x,y)) return false;
+        return true;
+    });
+}
+
+// ─── UI Updates ──────────────────────────────────────────
+function updateGemUI() {
+    gGotEl.textContent=gemsGot;
+    gNeedEl.textContent=gemsNeed;
+    gemIconsEl.innerHTML='';
+    const gtype=GEM_KEYS[stage%GEM_KEYS.length];
+    for(let i=0;i<gemsNeed;i++){
+        const d=document.createElement('div');
+        d.className='gem-icon'+(i<gemsGot?' lit':'');
+        d.style.backgroundColor=GEM[gtype].color;
+        d.style.color=GEM[gtype].glow;
+        gemIconsEl.appendChild(d);
+    }
+}
+
+// ─── Stage Clear ─────────────────────────────────────────
+function showClear() {
+    playClear();
+    overlayScoreEl.textContent=`SCORE: ${score}`;
+    overlay.classList.add('show');
+    // Confetti burst
+    const cols=['#ffd700','#ff00de','#00f2fe','#ff4136','#2ecc71','#a29bfe'];
+    for(let i=0;i<100;i++) {
+        setTimeout(()=>{
+            particles.push(new Particle(
+                Math.random()*canvas.width,
+                Math.random()*canvas.height*.5,
+                cols[Math.floor(Math.random()*cols.length)], true
+            ));
+        }, Math.random()*1200);
+    }
+}
+
+function nextStage() {
+    stage++;
+    gemsGot=0;
+    gemsNeed=Math.min(3+Math.floor(stage*1.5), 12);
+    locked=false;
+    overlay.classList.remove('show');
+    stageEl.textContent=`STAGE ${stage}`;
+    initGrid();
+    setupStartBlocks();
+    spawnPieces();
+    updateGemUI();
+}
+
+// ─── Game Over ───────────────────────────────────────────
+function showGameOver() {
+    goScoreText.textContent=`SCORE: ${score}`;
+    gameoverOverlay.classList.add('show');
+}
+
+function retryGame() {
+    score=0; combo=0; stage=1; gemsGot=0; gemsNeed=3; locked=false;
+    scoreEl.innerText='SCORE: 0';
+    stageEl.textContent='STAGE 1';
+    gameoverOverlay.classList.remove('show');
+    initGrid();
+    setupStartBlocks();
+    spawnPieces();
+    updateGemUI();
+}
+
+// ─── Resize handler ──────────────────────────────────────
+window.addEventListener('resize', ()=>{
+    resize();
+    const n=pieces.length;
+    pieces.forEach((p,i)=>{
+        p.x=(canvas.width/(n+1))*(i+1);
+        p.y=canvas.width+(canvas.height-canvas.width)/2;
+    });
+});
+
+// ─── Init ────────────────────────────────────────────────
+function init() {
+    initGrid();
+    resize();
+    setupStartBlocks();
+    updateGemUI();
+    spawnPieces();
+    animate();
 }
 
 init();
