@@ -2,10 +2,11 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>✨ Gem Block Puzzle</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { overscroll-behavior: none; }
         body {
             background: #0a0820;
             color: white;
@@ -18,136 +19,40 @@
             touch-action: none;
             user-select: none;
             -webkit-user-select: none;
+            overscroll-behavior: none;
+            padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
         }
-        #top-ui {
-            padding: 6px 16px 4px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
-        }
+        #top-ui { padding: 6px 16px 4px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
         #score { font-size: 20px; font-weight: bold; color: #00f2fe; text-shadow: 0 0 10px #00f2fe; }
         #stage-label { font-size: 18px; font-weight: bold; color: #ffd700; text-shadow: 0 0 8px #ffd700; }
-        #gem-bar-row {
-            padding: 0 12px 2px;
-            flex-shrink: 0;
-        }
-        #gem-goal-text {
-            font-size: 13px;
-            color: #aaa;
-            margin-bottom: 4px;
-        }
+        #gem-bar-row { padding: 0 12px 2px; flex-shrink: 0; }
+        #gem-goal-text { font-size: 13px; color: #aaa; margin-bottom: 4px; }
         #gem-goal-text span { color: #fff; font-weight: bold; font-size: 15px; }
-        #gem-bar-bg {
-            margin: 0 auto;
-            max-width: 320px;
-            height: 14px;
-            background: #1e1e3a;
-            border: 1.5px solid #444;
-            border-radius: 8px;
-            overflow: hidden;
-            position: relative;
-        }
-        #gem-bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #ff00de, #ffd700);
-            box-shadow: 0 0 8px #ffd700;
-            transition: width 0.4s ease;
-            width: 0%;
-        }
-        #combo-row {
-            font-size: 17px;
-            font-weight: bold;
-            color: #ff00de;
-            height: 21px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            flex-shrink: 0;
-            text-shadow: 0 0 8px #ff00de;
-        }
-        #canvas-wrap {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 0;
-            padding: 0 4px 4px;
-        }
-        canvas {
-            background: rgba(15, 18, 35, 0.95);
-            border: 2px solid #30336b;
-            border-radius: 12px;
-            box-shadow: 0 0 40px rgba(0, 114, 255, 0.2);
-            display: block;
-            touch-action: none;
-        }
-        .overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.82);
-            z-index: 50;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
+        #gem-bar-bg { margin: 0 auto; max-width: 320px; height: 14px; background: #1e1e3a; border: 1.5px solid #444; border-radius: 8px; overflow: hidden; }
+        #gem-bar-fill { height: 100%; background: linear-gradient(90deg, #ff00de, #ffd700); box-shadow: 0 0 8px #ffd700; transition: width 0.4s ease; width: 0%; }
+        #combo-row { font-size: 17px; font-weight: bold; color: #ff00de; height: 21px; opacity: 0; transition: opacity 0.3s; flex-shrink: 0; text-shadow: 0 0 8px #ff00de; }
+        #canvas-wrap { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; padding: 0 4px 4px; }
+        canvas { background: rgba(15,18,35,0.95); border: 2px solid #30336b; border-radius: 12px; box-shadow: 0 0 40px rgba(0,114,255,0.2); display: block; touch-action: none; }
+        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.82); z-index: 50; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
         .overlay.show { display: flex; }
-        #overlay-title {
-            font-size: 40px;
-            font-weight: bold;
-            color: #ffd700;
-            text-shadow: 0 0 20px #ffd700, 0 0 60px #ffa500;
-            animation: pop 0.4s ease-out;
-        }
+        #overlay-title { font-size: 40px; font-weight: bold; color: #ffd700; text-shadow: 0 0 20px #ffd700, 0 0 60px #ffa500; animation: pop .4s ease-out; }
         #overlay-sub { font-size: 15px; color: #aaa; margin: 6px 0 4px; }
         #overlay-score { font-size: 24px; font-weight: bold; color: #fff; margin-bottom: 12px; }
-        #next-preview {
-            font-size: 14px;
-            color: #aaa;
-            margin-bottom: 22px;
-        }
+        #next-preview { font-size: 14px; color: #aaa; margin-bottom: 22px; }
         #next-preview b { color: #ffd700; font-size: 16px; }
-        button.big-btn {
-            padding: 18px 56px;
-            font-size: 24px;
-            font-weight: bold;
-            background: linear-gradient(135deg, #00f2fe 0%, #9b00ff 100%);
-            border: none;
-            border-radius: 50px;
-            color: white;
-            cursor: pointer;
-            box-shadow: 0 6px 24px rgba(155, 0, 255, 0.5);
-            -webkit-tap-highlight-color: transparent;
-            letter-spacing: 1px;
-            touch-action: manipulation;
-        }
-        button.big-btn:active {
-            transform: scale(0.95);
-        }
-        #gameover-overlay h1 {
-            font-size: 38px;
-            color: #ff4757;
-            text-shadow: 0 0 20px #ff4757;
-        }
-        #gameover-overlay .go-score {
-            font-size: 22px;
-            margin: 10px 0 24px;
-        }
-        button.retry-btn {
-            background: linear-gradient(135deg, #ff4757, #ff6b81);
-        }
-        @keyframes pop {
-            0%   { transform: scale(0.5); opacity: 0; }
-            70%  { transform: scale(1.12); }
-            100% { transform: scale(1); opacity: 1; }
-        }
+        .big-btn { padding: 18px 56px; font-size: 24px; font-weight: bold; background: linear-gradient(135deg,#00f2fe 0%,#9b00ff 100%); border: none; border-radius: 50px; color: white; cursor: pointer; box-shadow: 0 6px 24px rgba(155,0,255,.5); -webkit-tap-highlight-color: transparent; letter-spacing: 1px; touch-action: manipulation; }
+        .big-btn:active { transform: scale(.95); }
+        #gameover-overlay h1 { font-size: 38px; color: #ff4757; text-shadow: 0 0 20px #ff4757; }
+        #gameover-overlay .go-score { font-size: 22px; margin: 10px 0 24px; }
+        .retry-btn { background: linear-gradient(135deg,#ff4757,#ff6b81) !important; }
+        #pause-overlay { background: rgba(0,0,0,0.7); }
+        #pause-overlay h2 { font-size: 36px; color: #fff; text-shadow: 0 0 20px #fff; margin-bottom: 24px; }
+        @keyframes pop { 0%{transform:scale(.5);opacity:0} 70%{transform:scale(1.12)} 100%{transform:scale(1);opacity:1} }
     </style>
 </head>
 <body>
-
 <div id="top-ui">
-    <div id="score">SCORE: 0</div>
+    <div><div id="score">SCORE: 0</div><div id="best-score" style="font-size:12px;color:#aaa;text-align:left">🏆 BEST: 0</div></div>
     <div id="stage-label">STAGE 1</div>
 </div>
 <div id="gem-bar-row">
@@ -155,9 +60,7 @@
     <div id="gem-bar-bg"><div id="gem-bar-fill"></div></div>
 </div>
 <div id="combo-row">COMBO x2!</div>
-<div id="canvas-wrap">
-    <canvas id="gameCanvas"></canvas>
-</div>
+<div id="canvas-wrap"><canvas id="gameCanvas"></canvas></div>
 
 <div id="overlay" class="overlay">
     <div id="overlay-title">✨ STAGE CLEAR! ✨</div>
@@ -166,11 +69,14 @@
     <div id="next-preview">つぎは <b id="next-need">22</b> こ集めよう！</div>
     <button class="big-btn" onclick="nextStage()">つぎへ ▶</button>
 </div>
-
 <div id="gameover-overlay" class="overlay">
     <h1>GAME OVER</h1>
     <div class="go-score" id="go-score-text">SCORE: 0</div>
     <button class="big-btn retry-btn" onclick="retryGame()">もういちど ↩</button>
+</div>
+<div id="pause-overlay" class="overlay">
+    <h2>⏸ 一時停止</h2>
+    <button class="big-btn" onclick="resumeGame()">つづける ▶</button>
 </div>
 
 <script>
@@ -181,572 +87,515 @@ const stageEl = document.getElementById('stage-label');
 const comboEl = document.getElementById('combo-row');
 const gGotEl  = document.getElementById('g-got');
 const gNeedEl = document.getElementById('g-need');
-const gemBarFill = document.getElementById('gem-bar-fill');
-const overlay    = document.getElementById('overlay');
+const gemBarFill     = document.getElementById('gem-bar-fill');
+const overlay        = document.getElementById('overlay');
 const overlayScoreEl = document.getElementById('overlay-score');
-const nextNeedEl = document.getElementById('next-need');
+const nextNeedEl     = document.getElementById('next-need');
 const gameoverOverlay = document.getElementById('gameover-overlay');
-const goScoreText = document.getElementById('go-score-text');
+const goScoreText    = document.getElementById('go-score-text');
+const pauseOverlay   = document.getElementById('pause-overlay');
+const bestScoreEl    = document.getElementById('best-score');
 
-// ─── Audio ──────────────────────────────────────────────
+// ─── Audio ────────────────────────────────────────────────
 const AC = new (window.AudioContext || window.webkitAudioContext)();
-function tone(freq, type = 'sine', dur = 0.12, vol = 0.09) {
+function tone(freq, type='sine', dur=0.12, vol=0.09) {
     try {
-        const o = AC.createOscillator(), g = AC.createGain();
-        o.type = type; o.frequency.value = freq;
-        g.gain.setValueAtTime(vol, AC.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime + dur);
-        o.connect(g); g.connect(AC.destination);
-        o.start(); o.stop(AC.currentTime + dur);
-    } catch(e) {}
+        const o=AC.createOscillator(), g=AC.createGain();
+        o.type=type; o.frequency.value=freq;
+        g.gain.setValueAtTime(vol,AC.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001,AC.currentTime+dur);
+        o.connect(g); g.connect(AC.destination); o.start(); o.stop(AC.currentTime+dur);
+    } catch(e){}
 }
-function playClear() {
-    [523,659,784,1047,1319,1568,2093].forEach((f,i) => setTimeout(()=>tone(f,'triangle',0.4,0.13), i*85));
-}
-function playGem() {
-    tone(1200,'sine',0.1,0.1); setTimeout(()=>tone(1600,'sine',0.15,0.08),80);
-}
+function playClear()   { [523,659,784,1047,1319,1568,2093].forEach((f,i)=>setTimeout(()=>tone(f,'triangle',.4,.13),i*85)); }
+function playGem()     { tone(1200,'sine',.1,.1); setTimeout(()=>tone(1600,'sine',.15,.08),80); }
+function playStar()    { [880,1100,1320,1760].forEach((f,i)=>setTimeout(()=>tone(f,'sine',.2,.1),i*60)); }
+function playBoom()    { tone(80,'sawtooth',.4,.25); setTimeout(()=>tone(150,'sawtooth',.15,.1),80); tone(600,'sine',.08,.08); }
+function playRainbow() { [523,659,784,880,1047].forEach((f,i)=>setTimeout(()=>tone(f,'triangle',.25,.08),i*40)); }
 
-// ─── Particles ──────────────────────────────────────────
+// ─── Particles / FloatText ────────────────────────────────
 class Particle {
-    constructor(x, y, color, big=false) {
+    constructor(x,y,color,big=false) {
         this.x=x; this.y=y; this.color=color;
-        this.r = big ? Math.random()*7+4 : Math.random()*4+1.5;
-        const s = big ? 11 : 7;
+        this.r=big?Math.random()*7+4:Math.random()*4+1.5;
+        const s=big?11:7;
         this.vx=(Math.random()-.5)*s; this.vy=(Math.random()-.5)*s-(big?3:1);
-        this.life=1; this.decay=big?0.016:0.026; this.g=0.22;
+        this.life=1; this.decay=big?.016:.026; this.g=.22;
     }
-    step() { this.x+=this.vx; this.y+=this.vy; this.vy+=this.g; this.life-=this.decay; }
-    draw() {
+    step(){ this.x+=this.vx; this.y+=this.vy; this.vy+=this.g; this.life-=this.decay; }
+    draw(){
         ctx.globalAlpha=Math.max(0,this.life);
         ctx.fillStyle=this.color;
         ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.fill();
         ctx.globalAlpha=1;
     }
 }
-
 class FloatText {
-    constructor(x, y, txt, color='#ffd700') {
-        this.x=x; this.y=y; this.txt=txt; this.color=color;
-        this.life=1; this.vy=-1.8;
-    }
-    step() { this.y+=this.vy; this.life-=0.022; }
-    draw() {
+    constructor(x,y,txt,color='#ffd700',slow=false) { this.x=x; this.y=y; this.txt=txt; this.color=color; this.life=1; this.vy=slow?-0.4:-1.8; this.decay=slow?0.010:0.022; }
+    step(){ this.y+=this.vy; this.life-=this.decay; }
+    draw(){
         ctx.globalAlpha=Math.max(0,this.life);
         ctx.fillStyle=this.color;
-        ctx.font=`bold ${Math.max(14,Math.floor(cellSize*0.55))}px Arial`;
+        ctx.font=`bold ${Math.max(14,Math.floor(cellSize*.55))}px Arial`;
         ctx.textAlign='center';
         ctx.shadowBlur=8; ctx.shadowColor=this.color;
-        ctx.fillText(this.txt, this.x, this.y);
+        ctx.fillText(this.txt,this.x,this.y);
         ctx.shadowBlur=0; ctx.textAlign='left'; ctx.globalAlpha=1;
     }
 }
 
-// ─── Constants ──────────────────────────────────────────
-const CELL = 8;
+// ─── Constants ────────────────────────────────────────────
+const CELL=8;
+const GEM={ ruby:{color:'#ff1f57',glow:'#ff6b81'}, sapphire:{color:'#1e90ff',glow:'#74b9ff'}, emerald:{color:'#00d96e',glow:'#55efc4'}, gold:{color:'#ffd700',glow:'#fff200'} };
+const GEM_KEYS=['ruby','sapphire','emerald','gold'];
+const SAVE_KEY='gemblock_v2';
+const HS_KEY='gemblock_hs';
 
-const GEM = {
-    ruby:     {color:'#ff1f57', glow:'#ff6b81'},
-    sapphire: {color:'#1e90ff', glow:'#74b9ff'},
-    emerald:  {color:'#00d96e', glow:'#55efc4'},
-    gold:     {color:'#ffd700', glow:'#fff200'},
-};
-const GEM_KEYS = ['ruby','sapphire','emerald','gold'];
-
-// Shapes — much more variety: tetrominoes, pentominoes, plus, U, big squares
-// maxGems: max number of gems this piece can have
-const SHAPES = [
-    // 1-cell rescue (always has gem)
-    {s:[[1]],                 c:'#f1c40f', maxGems:1, weight:0.5},
-
-    // 2-cell
-    {s:[[1,1]],               c:'#e74c3c', maxGems:1, weight:1},
-    {s:[[1],[1]],             c:'#3498db', maxGems:1, weight:1},
-
-    // 3-cell
-    {s:[[1,1,1]],             c:'#2ecc71', maxGems:2, weight:1},
-    {s:[[1],[1],[1]],         c:'#9b59b6', maxGems:2, weight:1},
-    {s:[[1,1],[1,0]],         c:'#e67e22', maxGems:1, weight:1},
-    {s:[[1,1],[0,1]],         c:'#1abc9c', maxGems:1, weight:1},
-    {s:[[1,0],[1,1]],         c:'#16a085', maxGems:1, weight:1},
-    {s:[[0,1],[1,1]],         c:'#d35400', maxGems:1, weight:1},
-
-    // 4-cell tetrominoes
-    {s:[[1,1],[1,1]],         c:'#e74c3c', maxGems:2, weight:1},   // O
-    {s:[[1,1,1,1]],           c:'#00cec9', maxGems:2, weight:1},   // I
-    {s:[[1],[1],[1],[1]],     c:'#fd79a8', maxGems:2, weight:1},   // I vert
-    {s:[[1,1,1],[0,1,0]],     c:'#9b59b6', maxGems:2, weight:1},   // T
-    {s:[[1,1,1],[1,0,0]],     c:'#6c5ce7', maxGems:2, weight:1},   // L
-    {s:[[1,1,1],[0,0,1]],     c:'#00b894', maxGems:2, weight:1},   // J
-    {s:[[1,0],[1,0],[1,1]],   c:'#e67e22', maxGems:2, weight:1},   // L rot
-    {s:[[0,1],[0,1],[1,1]],   c:'#fdcb6e', maxGems:2, weight:1},   // J rot
-    {s:[[1,1,0],[0,1,1]],     c:'#f39c12', maxGems:2, weight:1},   // S
-    {s:[[0,1,1],[1,1,0]],     c:'#c0392b', maxGems:2, weight:1},   // Z
-
-    // 5-cell pentominoes
-    {s:[[1,1,1,1,1]],         c:'#3498db', maxGems:3, weight:0.4}, // long I
-    {s:[[1],[1],[1],[1],[1]], c:'#e84393', maxGems:3, weight:0.4},
-    {s:[[0,1,0],[1,1,1],[0,1,0]], c:'#fdcb6e', maxGems:3, weight:0.6}, // plus +
-    {s:[[1,0,1],[1,1,1]],     c:'#a29bfe', maxGems:3, weight:0.7}, // U
-    {s:[[1,1,1],[1,0,1]],     c:'#74b9ff', maxGems:3, weight:0.7}, // n
-    {s:[[1,1],[1,1],[1,0]],   c:'#55efc4', maxGems:3, weight:0.7}, // P
-    {s:[[1,1],[1,1],[0,1]],   c:'#ffeaa7', maxGems:3, weight:0.7},
-
-    // 6-cell rectangles
-    {s:[[1,1,1],[1,1,1]],         c:'#fd79a8', maxGems:3, weight:0.6}, // 2x3
-    {s:[[1,1],[1,1],[1,1]],       c:'#74b9ff', maxGems:3, weight:0.6}, // 3x2
-
-    // 8-cell rectangles (新規)
-    {s:[[1,1,1,1],[1,1,1,1]],     c:'#e84393', maxGems:3, weight:0.5}, // 2x4
-    {s:[[1,1],[1,1],[1,1],[1,1]], c:'#00b894', maxGems:3, weight:0.5}, // 4x2
-
-    // 9-cell 3x3
-    {s:[[1,1,1],[1,1,1],[1,1,1]], c:'#ffd700', maxGems:3, weight:0.5}, // 3x3
-
-    // 10-cell (新規)
-    {s:[[1,1,1,1,1],[1,1,1,1,1]], c:'#ff7675', maxGems:3, weight:0.3}, // 2x5
+const SHAPES=[
+    {s:[[1]],                           c:'#f1c40f',maxGems:1,weight:.5},
+    {s:[[1,1]],                         c:'#e74c3c',maxGems:1,weight:1},
+    {s:[[1],[1]],                       c:'#3498db',maxGems:1,weight:1},
+    {s:[[1,1,1]],                       c:'#2ecc71',maxGems:2,weight:1},
+    {s:[[1],[1],[1]],                   c:'#9b59b6',maxGems:2,weight:1},
+    {s:[[1,1],[1,0]],                   c:'#e67e22',maxGems:1,weight:1},
+    {s:[[1,1],[0,1]],                   c:'#1abc9c',maxGems:1,weight:1},
+    {s:[[1,0],[1,1]],                   c:'#16a085',maxGems:1,weight:1},
+    {s:[[0,1],[1,1]],                   c:'#d35400',maxGems:1,weight:1},
+    {s:[[1,1],[1,1]],                   c:'#e74c3c',maxGems:2,weight:1},
+    {s:[[1,1,1,1]],                     c:'#00cec9',maxGems:2,weight:1},
+    {s:[[1],[1],[1],[1]],               c:'#fd79a8',maxGems:2,weight:1},
+    {s:[[1,1,1],[0,1,0]],               c:'#9b59b6',maxGems:2,weight:1},
+    {s:[[1,1,1],[1,0,0]],               c:'#6c5ce7',maxGems:2,weight:1},
+    {s:[[1,1,1],[0,0,1]],               c:'#00b894',maxGems:2,weight:1},
+    {s:[[1,0],[1,0],[1,1]],             c:'#e67e22',maxGems:2,weight:1},
+    {s:[[0,1],[0,1],[1,1]],             c:'#fdcb6e',maxGems:2,weight:1},
+    {s:[[1,1,0],[0,1,1]],               c:'#f39c12',maxGems:2,weight:1},
+    {s:[[0,1,1],[1,1,0]],               c:'#c0392b',maxGems:2,weight:1},
+    {s:[[1,1,1,1,1]],                   c:'#3498db',maxGems:3,weight:.4},
+    {s:[[1],[1],[1],[1],[1]],           c:'#e84393',maxGems:3,weight:.4},
+    {s:[[0,1,0],[1,1,1],[0,1,0]],       c:'#fdcb6e',maxGems:3,weight:.6},
+    {s:[[1,0,1],[1,1,1]],               c:'#a29bfe',maxGems:3,weight:.7},
+    {s:[[1,1,1],[1,0,1]],               c:'#74b9ff',maxGems:3,weight:.7},
+    {s:[[1,1],[1,1],[1,0]],             c:'#55efc4',maxGems:3,weight:.7},
+    {s:[[1,1],[1,1],[0,1]],             c:'#ffeaa7',maxGems:3,weight:.7},
+    {s:[[1,1,1],[1,1,1]],               c:'#fd79a8',maxGems:3,weight:.6},
+    {s:[[1,1],[1,1],[1,1]],             c:'#74b9ff',maxGems:3,weight:.6},
+    {s:[[1,1,1,1],[1,1,1,1]],           c:'#e84393',maxGems:3,weight:.5},
+    {s:[[1,1],[1,1],[1,1],[1,1]],       c:'#00b894',maxGems:3,weight:.5},
+    {s:[[1,1,1],[1,1,1],[1,1,1]],       c:'#ffd700',maxGems:3,weight:.5},
+    {s:[[1,1,1,1,1],[1,1,1,1,1]],       c:'#ff7675',maxGems:3,weight:.3},
 ];
 
-// ─── Stage patterns (initial blocks) ────────────────────
-// Bright color palette — same vibrancy as player pieces
-const BP = ['#e74c3c','#3498db','#2ecc71','#e67e22','#9b59b6','#1abc9c','#e84393','#f39c12'];
-function bc(x, y) { return BP[(x * 3 + y * 5) % BP.length]; }
+// ─── Stage patterns ───────────────────────────────────────
+const BP=['#e74c3c','#3498db','#2ecc71','#e67e22','#9b59b6','#1abc9c','#e84393','#f39c12'];
+function bc(x,y){ return BP[(x*3+y*5)%BP.length]; }
 
-const STAGE_PATTERNS = [
-    // Stage 1: bottom rows + side columns
-    () => {
-        [0,1,2,3,4,5,6].forEach(x => setCell(7,x,bc(x,7)));
-        [0,1,2,4,5,7].forEach(x => setCell(6,x,bc(x,6)));
-        [0,1,6,7].forEach(x => setCell(5,x,bc(x,5)));
-        [0,7].forEach(x => setCell(4,x,bc(x,4)));
-        setCell(7,7,'#9b59b6','emerald');
-        setCell(6,6,'#e74c3c','ruby');
+const STAGE_PATTERNS=[
+    ()=>{
+        [0,1,2,3,4,5,6].forEach(x=>setCell(7,x,bc(x,7)));
+        [0,1,2,4,5,7].forEach(x=>setCell(6,x,bc(x,6)));
+        [0,1,6,7].forEach(x=>setCell(5,x,bc(x,5)));
+        [0,7].forEach(x=>setCell(4,x,bc(x,4)));
+        setCell(7,7,'#9b59b6','emerald'); setCell(6,6,'#e74c3c','ruby');
     },
-    // Stage 2: cross pattern
-    () => {
-        for (let i=1;i<=6;i++) { setCell(i,3,bc(3,i)); setCell(i,4,bc(4,i)); }
-        for (let i=1;i<=6;i++) { setCell(3,i,bc(i,3)); setCell(4,i,bc(i,4)); }
-        [0,1,6,7].forEach(x => setCell(7,x,bc(x,7)));
-        [0,7].forEach(x => setCell(6,x,bc(x,6)));
-        setCell(3,3,'#1e90ff','sapphire');
-        setCell(4,4,'#00d96e','emerald');
-        setCell(3,4,'#ffd700','gold');
-        setCell(4,3,'#ff1f57','ruby');
+    ()=>{
+        for(let i=1;i<=6;i++){setCell(i,3,bc(3,i));setCell(i,4,bc(4,i));}
+        for(let i=1;i<=6;i++){setCell(3,i,bc(i,3));setCell(4,i,bc(i,4));}
+        [0,1,6,7].forEach(x=>setCell(7,x,bc(x,7)));
+        [0,7].forEach(x=>setCell(6,x,bc(x,6)));
+        setCell(3,3,'#1e90ff','sapphire'); setCell(4,4,'#00d96e','emerald');
+        setCell(3,4,'#ffd700','gold');     setCell(4,3,'#ff1f57','ruby');
     },
-    // Stage 3: four corner L-shapes
-    () => {
-        for (let i=0;i<3;i++) { setCell(0,i,bc(i,0)); setCell(i,0,bc(0,i)); }
-        for (let i=5;i<8;i++) { setCell(0,i,bc(i,0)); setCell(i-5,7,bc(7,i)); }
-        for (let i=5;i<8;i++) { setCell(i,0,bc(0,i)); setCell(7,i-5,bc(i,7)); }
-        for (let i=5;i<8;i++) { setCell(i,7,bc(7,i)); setCell(7,i,bc(i,7)); }
-        setCell(3,3,bc(3,3)); setCell(3,4,bc(4,3)); setCell(4,3,bc(3,4)); setCell(4,4,bc(4,4));
-        setCell(0,0,'#ffd700','gold');
-        setCell(0,7,'#1e90ff','sapphire');
-        setCell(7,0,'#00d96e','emerald');
-        setCell(7,7,'#ff1f57','ruby');
+    ()=>{
+        for(let i=0;i<3;i++){setCell(0,i,bc(i,0));setCell(i,0,bc(0,i));}
+        for(let i=5;i<8;i++){setCell(0,i,bc(i,0));setCell(i-5,7,bc(7,i));}
+        for(let i=5;i<8;i++){setCell(i,0,bc(0,i));setCell(7,i-5,bc(i,7));}
+        for(let i=5;i<8;i++){setCell(i,7,bc(7,i));setCell(7,i,bc(i,7));}
+        setCell(3,3,bc(3,3));setCell(3,4,bc(4,3));setCell(4,3,bc(3,4));setCell(4,4,bc(4,4));
+        setCell(0,0,'#ffd700','gold'); setCell(0,7,'#1e90ff','sapphire');
+        setCell(7,0,'#00d96e','emerald'); setCell(7,7,'#ff1f57','ruby');
     },
-    // Stage 4: zigzag stripes
-    () => {
-        [0,1,2,3].forEach(x => setCell(7,x,bc(x,7)));
-        [4,5,6,7].forEach(x => setCell(6,x,bc(x,6)));
-        [0,1,2,3].forEach(x => setCell(5,x,bc(x,5)));
-        [4,5,6,7].forEach(x => setCell(4,x,bc(x,4)));
-        setCell(7,3,'#ffd700','gold');
-        setCell(6,4,'#ff1f57','ruby');
-        setCell(5,3,'#1e90ff','sapphire');
-        setCell(4,4,'#00d96e','emerald');
+    ()=>{
+        [0,1,2,3].forEach(x=>setCell(7,x,bc(x,7)));
+        [4,5,6,7].forEach(x=>setCell(6,x,bc(x,6)));
+        [0,1,2,3].forEach(x=>setCell(5,x,bc(x,5)));
+        [4,5,6,7].forEach(x=>setCell(4,x,bc(x,4)));
+        setCell(7,3,'#ffd700','gold'); setCell(6,4,'#ff1f57','ruby');
+        setCell(5,3,'#1e90ff','sapphire'); setCell(4,4,'#00d96e','emerald');
     },
 ];
 
-// ─── State ──────────────────────────────────────────────
+// ─── State ────────────────────────────────────────────────
 let grid, cellSize, particles=[], floats=[];
-let pieces=[], drag=null, dragX=0, dragY=0;
-let dragScale=1;
-let score=0, combo=0, comboTimer=null;
+let pieces=[], drag=null, dragX=0, dragY=0, dragScale=1;
+let score=0, displayScore=0, combo=0, comboTimer=null;
 let stage=1, gemsGot=0, gemsNeed=15;
-let locked=false;
-let flashAlpha=0;
+let locked=false, paused=false, flashAlpha=0;
+let shownSpecials=new Set();
+let fallbackCount=0;
 
-function gemNeedFor(s) {
-    return Math.min(15 + (s - 1) * 7, 50);
+function gemNeedFor(s){ return Math.min(15+(s-1)*7,50); }
+
+// ─── Grid ─────────────────────────────────────────────────
+function initGrid(){ grid=Array(CELL).fill(null).map(()=>Array(CELL).fill(null)); }
+function setCell(row,col,color,gem=null,special=null){
+    if(row<0||row>=CELL||col<0||col>=CELL) return;
+    grid[row][col]={color,gem,special};
+}
+function setupStartBlocks(){ STAGE_PATTERNS[(stage-1)%STAGE_PATTERNS.length](); }
+
+// ─── Resize ───────────────────────────────────────────────
+function resize(){
+    const wrap=document.getElementById('canvas-wrap');
+    const avW=wrap.clientWidth-8, avH=wrap.clientHeight-8;
+    const size=Math.floor(Math.min(avW,avH/1.30,490));
+    canvas.width=size; canvas.height=Math.floor(size*1.30); cellSize=size/CELL;
 }
 
-// ─── Grid ────────────────────────────────────────────────
-function initGrid() {
-    grid = Array(CELL).fill(null).map(()=>Array(CELL).fill(null));
+// ─── Piece generation ─────────────────────────────────────
+function shapeKey(s){ return s.map(r=>r.join('')).join('|'); }
+
+function getBoardDensity(){
+    let n=0; for(let y=0;y<CELL;y++) for(let x=0;x<CELL;x++) if(grid[y][x]) n++;
+    return n/(CELL*CELL);
 }
 
-function setCell(row,col,color,gem=null) {
-    if (row<0||row>=CELL||col<0||col>=CELL) return;
-    grid[row][col] = {color, gem};
-}
-
-function setupStartBlocks() {
-    const idx = (stage - 1) % STAGE_PATTERNS.length;
-    STAGE_PATTERNS[idx]();
-}
-
-// ─── Resize ──────────────────────────────────────────────
-function resize() {
-    const wrap = document.getElementById('canvas-wrap');
-    const avW = wrap.clientWidth - 8;
-    const avH = wrap.clientHeight - 8;
-    const byH = avH / 1.30;
-    const size = Math.floor(Math.min(avW, byH, 490));
-    canvas.width  = size;
-    canvas.height = Math.floor(size * 1.30);
-    cellSize = size / CELL;
-}
-
-// ─── Piece generation ───────────────────────────────────
-function getBoardDensity() {
-    let filled = 0;
-    for (let y=0;y<CELL;y++) for (let x=0;x<CELL;x++) if (grid[y][x]) filled++;
-    return filled / (CELL * CELL);
-}
-
-// 盤面が空いているほど大きいピースを優先する重みを返す
-function adjustedWeight(sh, density) {
-    const n = sh.s.flat().filter(c=>c).length;
-    let w = sh.weight;
-    if (density < 0.20) {
-        // ガラガラ → 大きいピースを強く優先
-        if (n >= 8) w *= 8;
-        else if (n >= 6) w *= 5;
-        else if (n >= 4) w *= 3;
-        else if (n <= 2) w *= 0.1;
-    } else if (density < 0.35) {
-        // やや空き → 中〜大ピースを優先
-        if (n >= 6) w *= 4;
-        else if (n >= 4) w *= 2;
-        else if (n <= 2) w *= 0.3;
-    } else if (density < 0.55) {
-        // 通常密度 → 少しだけ大きめ寄り
-        if (n >= 4) w *= 1.4;
-        else if (n === 1) w *= 0.5;
-    }
-    // 高密度: そのまま（小さいピースで隙間を埋める局面）
+function adjustedWeight(sh,density){
+    const n=sh.s.flat().filter(c=>c).length;
+    let w=sh.weight;
+    if(density<.20){      if(n>=8)w*=8; else if(n>=6)w*=5; else if(n>=4)w*=3; else if(n<=2)w*=.1; }
+    else if(density<.35){ if(n>=6)w*=4; else if(n>=4)w*=2; else if(n<=2)w*=.3; }
+    else if(density<.55){ if(n>=4)w*=1.4; else if(n===1)w*=.5; }
     return w;
 }
 
-function pickShape(density) {
-    const totalW = SHAPES.reduce((s,sh)=>s+adjustedWeight(sh,density), 0);
-    let r = Math.random() * totalW;
-    for (const sh of SHAPES) {
-        r -= adjustedWeight(sh, density);
-        if (r <= 0) return sh;
-    }
+function pickShape(density){
+    const tw=SHAPES.reduce((s,sh)=>s+adjustedWeight(sh,density),0);
+    let r=Math.random()*tw;
+    for(const sh of SHAPES){ r-=adjustedWeight(sh,density); if(r<=0) return sh; }
     return SHAPES[0];
 }
 
-function makePiece(shapeData, idx) {
-    const cells = [];
-    shapeData.s.forEach((row, ri) => row.forEach((c, ci) => {
-        if (c) cells.push({r:ri, c:ci});
-    }));
-
-    // Decide gem count
-    let gemCount = 0;
-    const isOneByOne = (cells.length === 1);
-    if (isOneByOne) {
-        gemCount = 1;  // 1x1 always has gem (rescue + reward)
-    } else if (Math.random() < 0.75) {  // 75% has at least 1 gem
-        gemCount = 1 + Math.floor(Math.random() * shapeData.maxGems);
-        gemCount = Math.min(gemCount, cells.length);
+function countClearedLines(shape,x,y){
+    const tmp=new Set();
+    shape.forEach((row,ri)=>row.forEach((c,ci)=>{ if(c) tmp.add(`${y+ri},${x+ci}`); }));
+    let lines=0;
+    for(let r=0;r<CELL;r++){
+        let full=true;
+        for(let c=0;c<CELL;c++) if(!grid[r][c]&&!tmp.has(`${r},${c}`)){full=false;break;}
+        if(full) lines++;
     }
-
-    // Random gem assignment
-    const shuffled = [...cells].sort(()=>Math.random()-0.5);
-    const gemCells = [];
-    for (let i = 0; i < gemCount; i++) {
-        const gemType = GEM_KEYS[Math.floor(Math.random()*GEM_KEYS.length)];
-        gemCells.push({r: shuffled[i].r, c: shuffled[i].c, type: gemType});
+    for(let c=0;c<CELL;c++){
+        let full=true;
+        for(let r=0;r<CELL;r++) if(!grid[r][c]&&!tmp.has(`${r},${c}`)){full=false;break;}
+        if(full) lines++;
     }
-
-    const px = (canvas.width / 3) * idx + canvas.width / 6;
-    const py = canvas.width + (canvas.height - canvas.width) / 2;
-    return {shape: shapeData.s, color: shapeData.c, gemCells, x: px, y: py};
+    return lines;
 }
 
-// Smart helper: find a shape that can clear at least 1 line on current grid
-function findHelperShape() {
-    const shuffled = [...SHAPES].sort(()=>Math.random()-0.5);
-    for (const shape of shuffled) {
-        for (let y=0; y<=CELL-shape.s.length; y++) {
-            for (let x=0; x<=CELL-shape.s[0].length; x++) {
-                if (canPlace(shape.s, x, y) && wouldClearLine(shape.s, x, y)) {
-                    return shape;
-                }
-            }
+function findBestHelperShape(){
+    let best=null,bestScore=0;
+    const shuffled=[...SHAPES].sort(()=>Math.random()-.5);
+    for(const sh of shuffled){
+        for(let y=0;y<=CELL-sh.s.length;y++) for(let x=0;x<=CELL-sh.s[0].length;x++){
+            if(!canPlace(sh.s,x,y)) continue;
+            const sc=countClearedLines(sh.s,x,y);
+            if(sc>bestScore){bestScore=sc;best=sh;}
         }
     }
-    return null;
+    return best;
 }
 
-function wouldClearLine(shape, x, y) {
-    const tmp = new Set();
-    shape.forEach((row, ri) => row.forEach((c, ci) => {
-        if (c) tmp.add((y+ri)+','+(x+ci));
-    }));
-    for (let r=0; r<CELL; r++) {
-        let full = true;
-        for (let c=0; c<CELL; c++) {
-            if (!grid[r][c] && !tmp.has(r+','+c)) { full=false; break; }
-        }
-        if (full) return true;
-    }
-    for (let c=0; c<CELL; c++) {
-        let full = true;
-        for (let r=0; r<CELL; r++) {
-            if (!grid[r][c] && !tmp.has(r+','+c)) { full=false; break; }
-        }
-        if (full) return true;
-    }
+function canPlaceAnywhere(shape){
+    for(let y=0;y<=CELL-shape.length;y++) for(let x=0;x<=CELL-shape[0].length;x++) if(canPlace(shape,x,y)) return true;
     return false;
 }
 
-function spawnPieces() {
-    const density = getBoardDensity();
-    pieces = [];
-    // 1 of 3 pieces is a "helper" (clears a line) when board is dense enough
-    const helper = density > 0.25 ? findHelperShape() : null;
-    const helperSlot = helper ? Math.floor(Math.random()*3) : -1;
-    for (let i=0; i<3; i++) {
-        const sh = (i === helperSlot) ? helper : pickShape(density);
-        pieces.push(makePiece(sh, i));
+function makePiece(shapeData,idx){
+    const cells=[];
+    shapeData.s.forEach((row,ri)=>row.forEach((c,ci)=>{ if(c) cells.push({r:ri,c:ci}); }));
+    const shuffled=[...cells].sort(()=>Math.random()-.5);
+
+    let gemCells=[], specialCells=[];
+    const isOneByOne=(cells.length===1);
+
+    if(isOneByOne){
+        gemCells=[{r:shuffled[0].r,c:shuffled[0].c,type:GEM_KEYS[Math.floor(Math.random()*4)]}];
+    } else if(Math.random()<.75){
+        const cnt=Math.min(1+Math.floor(Math.random()*shapeData.maxGems),cells.length);
+        for(let i=0;i<cnt;i++) gemCells.push({r:shuffled[i].r,c:shuffled[i].c,type:GEM_KEYS[Math.floor(Math.random()*4)]});
     }
+
+    const px=(canvas.width/3)*idx+canvas.width/6;
+    const py=canvas.width+(canvas.height-canvas.width)/2;
+    return {shape:shapeData.s,color:shapeData.c,gemCells,specialCells,x:px,y:py};
 }
 
-// ─── Drawing ─────────────────────────────────────────────
-function drawGem(cx, cy, type, r, pulse=1) {
-    const g = GEM[type];
-    const pr = r * pulse;
-
-    // Dark backdrop circle for high contrast on any color
-    ctx.fillStyle = 'rgba(0,0,0,0.55)';
-    ctx.beginPath();
-    ctx.arc(cx, cy, pr * 1.18, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Diamond with strong glow
-    ctx.shadowBlur = 18 * pulse;
-    ctx.shadowColor = g.glow;
-    ctx.fillStyle = g.color;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - pr);
-    ctx.lineTo(cx + pr * 0.78, cy);
-    ctx.lineTo(cx, cy + pr);
-    ctx.lineTo(cx - pr * 0.78, cy);
-    ctx.closePath();
-    ctx.fill();
-
-    // White outline (thick) — makes gem visible on red blocks
-    ctx.shadowBlur = 0;
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = Math.max(1.6, pr * 0.13);
-    ctx.stroke();
-
-    // Top facet highlight
-    ctx.fillStyle = 'rgba(255,255,255,0.65)';
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - pr * 0.92);
-    ctx.lineTo(cx + pr * 0.55, cy);
-    ctx.lineTo(cx, cy - pr * 0.15);
-    ctx.closePath();
-    ctx.fill();
-
-    // Bright sparkle dot
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(cx - pr * 0.25, cy - pr * 0.4, pr * 0.18, 0, Math.PI * 2);
-    ctx.fill();
+function injectSpecial(piece){
+    const cells=[];
+    piece.shape.forEach((row,ri)=>row.forEach((c,ci)=>{ if(c) cells.push({r:ri,c:ci}); }));
+    const target=cells[Math.floor(Math.random()*cells.length)];
+    const type=['star','bomb','rainbow'][Math.floor(Math.random()*3)];
+    piece.gemCells=piece.gemCells.filter(g=>!(g.r===target.r&&g.c===target.c));
+    piece.specialCells=[{r:target.r,c:target.c,type}];
+    maybeShowSpecialTip(type);
 }
 
-function drawCell(gx, gy, cell) {
-    const px=gx*cellSize, py=gy*cellSize;
-    if (cell.gem) {
-        ctx.shadowBlur=10; ctx.shadowColor=GEM[cell.gem].glow;
+const SPECIAL_TIPS={
+    star:'⭐ スターブロック！消すと宝石+5！',
+    bomb:'💣 ボムブロック！消すと周りも爆発！',
+    rainbow:'🌈 レインボー！消すと同じ色が全消え！',
+};
+function maybeShowSpecialTip(type){
+    if(shownSpecials.has(type)) return;
+    shownSpecials.add(type);
+    floats.push(new FloatText(canvas.width/2,canvas.height*.4,SPECIAL_TIPS[type],'#fff',true));
+}
+
+function spawnPieces(){
+    const density=getBoardDensity();
+    const helper=density>.25?findBestHelperShape():null;
+    const helperSlot=helper?Math.floor(Math.random()*3):-1;
+    const specialSlot=Math.random()<.10?Math.floor(Math.random()*3):-1;
+
+    let candidates, attempts=0;
+    do {
+        candidates=[];
+        const usedKeys=new Set();
+        for(let i=0;i<3;i++){
+            let sh;
+            if(i===helperSlot){ sh=helper; }
+            else {
+                let tries=0;
+                do{ sh=pickShape(density); tries++; } while(usedKeys.has(shapeKey(sh.s))&&tries<10);
+            }
+            usedKeys.add(shapeKey(sh.s));
+            const p=makePiece(sh,i);
+            if(i===specialSlot) injectSpecial(p);
+            candidates.push(p);
+        }
+        attempts++;
+    } while(attempts<8 && !candidates.every(p=>canPlaceAnywhere(p.shape)));
+
+    pieces=candidates;
+}
+
+// ─── Draw specials ────────────────────────────────────────
+function drawStar(cx,cy,r){
+    ctx.save(); ctx.translate(cx,cy);
+    ctx.fillStyle='rgba(0,0,0,.45)';
+    ctx.beginPath(); ctx.arc(0,0,r*1.15,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=18; ctx.shadowColor='#ffd700';
+    ctx.fillStyle='#ffd700';
+    ctx.beginPath();
+    for(let i=0;i<5;i++){
+        const a=i*4*Math.PI/5-Math.PI/2, ai=a+2*Math.PI/5;
+        if(i===0) ctx.moveTo(r*Math.cos(a),r*Math.sin(a));
+        else ctx.lineTo(r*Math.cos(a),r*Math.sin(a));
+        ctx.lineTo(r*.42*Math.cos(ai),r*.42*Math.sin(ai));
     }
-    ctx.fillStyle=cell.color;
-    ctx.fillRect(px+1, py+1, cellSize-2, cellSize-2);
+    ctx.closePath(); ctx.fill();
     ctx.shadowBlur=0;
-    if (cell.gem) {
-        const pulse = 1 + 0.12*Math.sin(tick*0.07 + gx*0.9 + gy*1.1);
-        drawGem(px+cellSize/2, py+cellSize/2, cell.gem, cellSize*0.35, pulse);
+    ctx.fillStyle='rgba(255,255,255,.65)'; ctx.beginPath(); ctx.arc(-r*.3,-r*.35,r*.18,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+}
+
+function drawBomb(cx,cy,r){
+    ctx.save(); ctx.translate(cx,cy);
+    ctx.shadowBlur=14; ctx.shadowColor='#ff4757';
+    ctx.fillStyle='#1a1a2e';
+    ctx.beginPath(); ctx.arc(0,r*.08,r*.76,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.fillStyle='rgba(255,255,255,.22)'; ctx.beginPath(); ctx.arc(-r*.22,-r*.22,r*.28,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#fdcb6e'; ctx.lineWidth=r*.14;
+    ctx.beginPath(); ctx.moveTo(r*.33,-r*.5); ctx.quadraticCurveTo(r*.65,-r*1.0,r*.2,-r*1.1); ctx.stroke();
+    ctx.fillStyle='#ffd700'; ctx.shadowBlur=8; ctx.shadowColor='#ffd700';
+    ctx.beginPath(); ctx.arc(r*.2,-r*1.1,r*.16,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0; ctx.lineWidth=1;
+    ctx.restore();
+}
+
+function drawRainbow(cx,cy,r){
+    ctx.save(); ctx.translate(cx,cy);
+    ctx.fillStyle='rgba(0,0,0,.3)'; ctx.beginPath(); ctx.arc(0,0,r*1.15,0,Math.PI*2); ctx.fill();
+    const hue=(tick*3)%360;
+    const grad=ctx.createRadialGradient(0,0,0,0,0,r);
+    grad.addColorStop(0,`hsl(${hue},100%,75%)`);
+    grad.addColorStop(.5,`hsl(${hue+120},100%,65%)`);
+    grad.addColorStop(1,`hsl(${hue+240},100%,55%)`);
+    ctx.fillStyle=grad; ctx.shadowBlur=16; ctx.shadowColor=`hsl(${hue},100%,70%)`;
+    ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+    ctx.fillStyle='rgba(255,255,255,.85)';
+    for(let i=0;i<4;i++){
+        const a=tick*.05+i*Math.PI/2;
+        ctx.beginPath(); ctx.arc(r*.62*Math.cos(a),r*.62*Math.sin(a),r*.1,0,Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawSpecialIcon(cx,cy,type,r){
+    if(type==='star')    drawStar(cx,cy,r);
+    else if(type==='bomb')    drawBomb(cx,cy,r);
+    else if(type==='rainbow') drawRainbow(cx,cy,r);
+}
+
+// ─── Draw gem (same as before but clean) ─────────────────
+function drawGem(cx,cy,type,r,pulse=1){
+    const g=GEM[type]; const pr=r*pulse;
+    ctx.fillStyle='rgba(0,0,0,.55)'; ctx.beginPath(); ctx.arc(cx,cy,pr*1.18,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=18*pulse; ctx.shadowColor=g.glow; ctx.fillStyle=g.color;
+    ctx.beginPath(); ctx.moveTo(cx,cy-pr); ctx.lineTo(cx+pr*.78,cy); ctx.lineTo(cx,cy+pr); ctx.lineTo(cx-pr*.78,cy); ctx.closePath(); ctx.fill();
+    ctx.shadowBlur=0; ctx.strokeStyle='#fff'; ctx.lineWidth=Math.max(1.6,pr*.13); ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,.65)'; ctx.beginPath(); ctx.moveTo(cx,cy-pr*.92); ctx.lineTo(cx+pr*.55,cy); ctx.lineTo(cx,cy-pr*.15); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(cx-pr*.25,cy-pr*.4,pr*.18,0,Math.PI*2); ctx.fill();
+    ctx.lineWidth=1;
+}
+
+function drawCell(gx,gy,cell){
+    const px=gx*cellSize,py=gy*cellSize;
+    if(cell.gem||cell.special){ ctx.shadowBlur=10; ctx.shadowColor=cell.gem?GEM[cell.gem].glow:'#ffffff'; }
+    ctx.fillStyle=cell.color;
+    ctx.fillRect(px+1,py+1,cellSize-2,cellSize-2);
+    ctx.shadowBlur=0;
+    if(cell.gem){
+        const pulse=1+.12*Math.sin(tick*.07+gx*.9+gy*1.1);
+        drawGem(px+cellSize/2,py+cellSize/2,cell.gem,cellSize*.35,pulse);
+    } else if(cell.special){
+        const pulse=1+.1*Math.sin(tick*.08+gx+gy);
+        drawSpecialIcon(px+cellSize/2,py+cellSize/2,cell.special,cellSize*.38*pulse);
     }
 }
 
-function drawPiece(p, cx, cy, scale) {
-    const s = cellSize*scale;
+function drawPiece(p,cx,cy,scale){
+    const s=cellSize*scale;
     const offX=(p.shape[0].length*s)/2, offY=(p.shape.length*s)/2;
     p.shape.forEach((row,ri)=>row.forEach((cell,ci)=>{
-        if (!cell) return;
+        if(!cell) return;
         const px=cx-offX+ci*s, py=cy-offY+ri*s;
-        ctx.shadowBlur=9; ctx.shadowColor=p.color;
-        ctx.fillStyle=p.color;
-        ctx.fillRect(px+2,py+2,s-4,s-4);
-        ctx.shadowBlur=0;
-        const gem = p.gemCells.find(g => g.r===ri && g.c===ci);
-        if (gem) drawGem(px+s/2, py+s/2, gem.type, s*0.35);
+        ctx.shadowBlur=9; ctx.shadowColor=p.color; ctx.fillStyle=p.color;
+        ctx.fillRect(px+2,py+2,s-4,s-4); ctx.shadowBlur=0;
+        const gem=p.gemCells.find(g=>g.r===ri&&g.c===ci);
+        const sp=p.specialCells.find(g=>g.r===ri&&g.c===ci);
+        if(gem)       drawGem(px+s/2,py+s/2,gem.type,s*.35);
+        else if(sp)   drawSpecialIcon(px+s/2,py+s/2,sp.type,s*.38);
     }));
 }
 
-// ─── Animation loop ──────────────────────────────────────
+// ─── Animation loop ───────────────────────────────────────
 let tick=0;
-function animate() {
+function animate(){
     tick++;
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-    // Grid
-    for (let y=0;y<CELL;y++) for (let x=0;x<CELL;x++) {
-        const cell=grid[y][x];
-        if (cell) {
-            drawCell(x,y,cell);
-        } else {
-            ctx.fillStyle='#111828';
-            ctx.fillRect(x*cellSize+1,y*cellSize+1,cellSize-2,cellSize-2);
-            ctx.strokeStyle='#1e2d40';
-            ctx.lineWidth=1;
-            ctx.strokeRect(x*cellSize+.5,y*cellSize+.5,cellSize,cellSize);
+    if(!paused){
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        for(let y=0;y<CELL;y++) for(let x=0;x<CELL;x++){
+            const cell=grid[y][x];
+            if(cell){ drawCell(x,y,cell); }
+            else { ctx.fillStyle='#111828'; ctx.fillRect(x*cellSize+1,y*cellSize+1,cellSize-2,cellSize-2); ctx.strokeStyle='#1e2d40'; ctx.lineWidth=1; ctx.strokeRect(x*cellSize+.5,y*cellSize+.5,cellSize,cellSize); }
         }
-    }
-
-    // Divider
-    ctx.strokeStyle='#30336b'; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.moveTo(0,canvas.width); ctx.lineTo(canvas.width,canvas.width); ctx.stroke();
-    ctx.lineWidth=1;
-
-    particles=particles.filter(p=>p.life>0);
-    particles.forEach(p=>{p.step();p.draw();});
-
-    floats=floats.filter(f=>f.life>0);
-    floats.forEach(f=>{f.step();f.draw();});
-
-    // Ghost preview
-    if (drag) {
-        const gx=Math.round((dragX-drag.shape[0].length*cellSize/2)/cellSize);
-        const gy=Math.round((dragY-drag.shape.length*cellSize/2)/cellSize);
-        if (canPlace(drag.shape,gx,gy)) {
-            ctx.globalAlpha=.35;
-            drag.shape.forEach((row,ri)=>row.forEach((cell,ci)=>{
-                if (cell) { ctx.fillStyle=drag.color; ctx.fillRect((gx+ci)*cellSize+1,(gy+ri)*cellSize+1,cellSize-2,cellSize-2); }
-            }));
-            ctx.globalAlpha=1;
+        ctx.strokeStyle='#30336b'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.moveTo(0,canvas.width); ctx.lineTo(canvas.width,canvas.width); ctx.stroke(); ctx.lineWidth=1;
+        particles=particles.filter(p=>p.life>0); particles.forEach(p=>{p.step();p.draw();});
+        floats=floats.filter(f=>f.life>0); floats.forEach(f=>{f.step();f.draw();});
+        if(drag){
+            const gx=Math.round((dragX-drag.shape[0].length*cellSize/2)/cellSize);
+            const gy=Math.round((dragY-drag.shape.length*cellSize/2)/cellSize);
+            if(canPlace(drag.shape,gx,gy)){
+                ctx.globalAlpha=.35;
+                drag.shape.forEach((row,ri)=>row.forEach((c,ci)=>{ if(c){ctx.fillStyle=drag.color;ctx.fillRect((gx+ci)*cellSize+1,(gy+ri)*cellSize+1,cellSize-2,cellSize-2);} }));
+                ctx.globalAlpha=1;
+            }
         }
+        if(flashAlpha>0){ ctx.fillStyle=`rgba(255,215,0,${flashAlpha})`; ctx.fillRect(0,0,canvas.width,canvas.height); flashAlpha=Math.max(0,flashAlpha-.04); }
+        // Tray label
+        ctx.fillStyle='rgba(255,255,255,.13)';
+        ctx.font=`bold ${Math.max(9,Math.floor(cellSize*.28))}px Arial`;
+        ctx.textAlign='center';
+        ctx.fillText('▼  NEXT  ▼', canvas.width/2, canvas.width+cellSize*.42);
+        ctx.textAlign='left';
+        if(drag) dragScale=Math.min(dragScale+.08,1.15); else dragScale=1;
+        pieces.forEach(p=>{
+            if(p!==drag){
+                if(!canPlaceAnywhere(p.shape)) ctx.globalAlpha=.28;
+                drawPiece(p,p.x,p.y,.6);
+                ctx.globalAlpha=1;
+            }
+        });
+        if(drag) drawPiece(drag,dragX,dragY,dragScale);
+        // Score count-up animation
+        if(displayScore<score){ displayScore=Math.min(score,displayScore+Math.max(1,Math.ceil((score-displayScore)*.18))); scoreEl.innerText=`SCORE: ${displayScore}`; }
     }
-
-    // Screen flash on gem collect
-    if (flashAlpha>0) {
-        ctx.fillStyle=`rgba(255,215,0,${flashAlpha})`;
-        ctx.fillRect(0,0,canvas.width,canvas.height);
-        flashAlpha=Math.max(0,flashAlpha-0.04);
-    }
-
-    // Tray pieces
-    if (drag) dragScale=Math.min(dragScale+0.08, 1.15);
-    else      dragScale=1;
-    pieces.forEach(p=>{ if(p!==drag) drawPiece(p,p.x,p.y,.6); });
-    if (drag) drawPiece(drag,dragX,dragY,dragScale);
-
     requestAnimationFrame(animate);
 }
 
-// ─── Controls ────────────────────────────────────────────
-function toC(ex,ey) {
-    const r=canvas.getBoundingClientRect();
-    return [(ex-r.left)*(canvas.width/r.width), (ey-r.top)*(canvas.height/r.height)];
-}
+// ─── Controls ─────────────────────────────────────────────
+function toC(ex,ey){ const r=canvas.getBoundingClientRect(); return [(ex-r.left)*(canvas.width/r.width),(ey-r.top)*(canvas.height/r.height)]; }
 
-// Touch handlers — only preventDefault when actively dragging,
-// so overlay buttons receive normal click events.
-canvas.addEventListener('mousedown', e => down(...toC(e.clientX,e.clientY)));
-canvas.addEventListener('touchstart', e => {
-    // Only swallow the touch if it lands on a piece in the tray
-    const [cx,cy] = toC(e.touches[0].clientX, e.touches[0].clientY);
-    if (tryStartDrag(cx, cy)) e.preventDefault();
-}, {passive:false});
+canvas.addEventListener('mousedown',e=>down(...toC(e.clientX,e.clientY)));
+canvas.addEventListener('touchstart',e=>{
+    const[cx,cy]=toC(e.touches[0].clientX,e.touches[0].clientY);
+    if(tryStartDrag(cx,cy)) e.preventDefault();
+},{passive:false});
+document.addEventListener('mousemove',e=>{ if(!drag) return; const[cx,cy]=toC(e.clientX,e.clientY); dragX=cx;dragY=cy; });
+document.addEventListener('touchmove',e=>{ if(!drag) return; e.preventDefault(); const[cx,cy]=toC(e.touches[0].clientX,e.touches[0].clientY); dragX=cx;dragY=cy; },{passive:false});
+document.addEventListener('mouseup',up);
+document.addEventListener('touchend',e=>{ if(!drag) return; e.preventDefault(); up(); },{passive:false});
 
-document.addEventListener('mousemove', e => {
-    if (!drag) return;
-    const [cx,cy] = toC(e.clientX, e.clientY);
-    dragX = cx; dragY = cy;
-});
-document.addEventListener('touchmove', e => {
-    if (!drag) return;
-    e.preventDefault();
-    const [cx,cy] = toC(e.touches[0].clientX, e.touches[0].clientY);
-    dragX = cx; dragY = cy;
-}, {passive:false});
-
-document.addEventListener('mouseup', up);
-document.addEventListener('touchend', e => {
-    if (!drag) return;
-    e.preventDefault();
-    up();
-}, {passive:false});
-
-function tryStartDrag(cx, cy) {
-    if (locked) return false;
-    if (AC.state==='suspended') AC.resume();
-    const hit = Math.max(66, cellSize*1.3);
-    for (const p of pieces) {
-        if (Math.abs(cx-p.x)<hit && Math.abs(cy-p.y)<hit) {
-            drag=p; dragX=cx; dragY=cy;
-            tone(440,'sine',.06,.08);
-            return true;
-        }
+function tryStartDrag(cx,cy){
+    if(locked||paused) return false;
+    if(AC.state==='suspended') AC.resume();
+    const hit=Math.max(66,cellSize*1.3);
+    for(const p of pieces){
+        if(Math.abs(cx-p.x)<hit&&Math.abs(cy-p.y)<hit){ drag=p;dragX=cx;dragY=cy;tone(440,'sine',.06,.08);return true; }
     }
     return false;
 }
+function down(cx,cy){ tryStartDrag(cx,cy); }
 
-function down(cx, cy) { tryStartDrag(cx, cy); }
-
-function up() {
-    if (!drag) return;
+function up(){
+    if(!drag) return;
     const gx=Math.round((dragX-drag.shape[0].length*cellSize/2)/cellSize);
     const gy=Math.round((dragY-drag.shape.length*cellSize/2)/cellSize);
-    if (canPlace(drag.shape,gx,gy)) {
+    if(canPlace(drag.shape,gx,gy)){
         place(drag,gx,gy);
         pieces=pieces.filter(p=>p!==drag);
-        if (pieces.length===0) spawnPieces();
+        if(pieces.length===0) spawnPieces();
         checkLines();
         tone(800,'square',.1,.08);
-    } else {
-        // Snap back to original position visually (no actual data change needed)
+        saveState();
     }
     drag=null;
 }
 
-// ─── Game Logic ──────────────────────────────────────────
-function canPlace(shape,x,y) {
-    if (x<0||y<0||x+shape[0].length>CELL||y+shape.length>CELL) return false;
+// ─── Game logic ───────────────────────────────────────────
+function canPlace(shape,x,y){
+    if(x<0||y<0||x+shape[0].length>CELL||y+shape.length>CELL) return false;
     return shape.every((row,ri)=>row.every((c,ci)=>!c||!grid[y+ri][x+ci]));
 }
 
-function place(p,gx,gy) {
+function place(p,gx,gy){
     p.shape.forEach((row,ri)=>row.forEach((cell,ci)=>{
-        if (!cell) return;
-        const gem = p.gemCells.find(g => g.r===ri && g.c===ci);
-        grid[gy+ri][gx+ci]={color:p.color, gem: gem ? gem.type : null};
-        for(let i=0;i<4;i++)
-            particles.push(new Particle((gx+ci)*cellSize+cellSize/2,(gy+ri)*cellSize+cellSize/2,p.color));
+        if(!cell) return;
+        const gem=p.gemCells.find(g=>g.r===ri&&g.c===ci);
+        const sp=p.specialCells.find(g=>g.r===ri&&g.c===ci);
+        grid[gy+ri][gx+ci]={color:p.color,gem:gem?gem.type:null,special:sp?sp.type:null};
+        for(let i=0;i<4;i++) particles.push(new Particle((gx+ci)*cellSize+cellSize/2,(gy+ri)*cellSize+cellSize/2,p.color));
     }));
 }
 
-function checkLines() {
-    let rows=[], cols=[];
+function checkLines(depth=0){
+    if(depth>3||locked) return;
+    let rows=[],cols=[];
     for(let i=0;i<CELL;i++){
         if(grid[i].every(c=>c)) rows.push(i);
         if(grid.map(r=>r[i]).every(c=>c)) cols.push(i);
     }
-    if(!rows.length&&!cols.length) {
-        combo=0; comboEl.style.opacity=0;
-        maybeGameOver();
+    if(!rows.length&&!cols.length){
+        if(depth===0){ combo=0;comboEl.style.opacity=0; }
+        if(!locked) maybeGameOver();
         return;
     }
 
-    combo++;
-    let gemsFound=0;
+    combo++; let gemsFound=0,specialList=[];
     const cleared=new Set();
 
     rows.forEach(r=>{
@@ -754,9 +603,8 @@ function checkLines() {
             const cell=grid[r][x]; if(!cell) continue;
             cleared.add(`${r},${x}`);
             if(cell.gem) gemsFound++;
-            for(let i=0;i<10;i++)
-                particles.push(new Particle(x*cellSize+cellSize/2,r*cellSize+cellSize/2,
-                    cell.gem?GEM[cell.gem].glow:cell.color, !!cell.gem));
+            if(cell.special) specialList.push({type:cell.special,x,y:r});
+            for(let i=0;i<10;i++) particles.push(new Particle(x*cellSize+cellSize/2,r*cellSize+cellSize/2,cell.gem?GEM[cell.gem].glow:(cell.special?'#fff':cell.color),!!(cell.gem||cell.special)));
             grid[r][x]=null;
         }
     });
@@ -765,149 +613,203 @@ function checkLines() {
             if(cleared.has(`${y},${c}`)) continue;
             const cell=grid[y][c]; if(!cell) continue;
             if(cell.gem) gemsFound++;
-            for(let i=0;i<10;i++)
-                particles.push(new Particle(c*cellSize+cellSize/2,y*cellSize+cellSize/2,
-                    cell.gem?GEM[cell.gem].glow:cell.color, !!cell.gem));
+            if(cell.special) specialList.push({type:cell.special,x:c,y});
+            for(let i=0;i<10;i++) particles.push(new Particle(c*cellSize+cellSize/2,y*cellSize+cellSize/2,cell.gem?GEM[cell.gem].glow:(cell.special?'#fff':cell.color),!!(cell.gem||cell.special)));
             grid[y][c]=null;
         }
     });
 
-    const lines = rows.length + cols.length;
-    const pts = lines * 100 * combo;
-    score += pts;
-    scoreEl.innerText = `SCORE: ${score}`;
-
-    const midX = canvas.width/2, midY = canvas.width/2;
-    floats.push(new FloatText(midX, midY, `+${pts}`, combo>=2?'#ff00de':'#ffd700'));
-
-    comboEl.innerText = `COMBO x${combo}!`;
-    comboEl.style.opacity = 1;
-    clearTimeout(comboTimer);
-    comboTimer = setTimeout(()=>{ comboEl.style.opacity=0; }, 1500);
-
+    const lines=rows.length+cols.length;
+    const pts=lines*100*combo;
+    score+=pts;
+    const midX=canvas.width/2, midY=canvas.width/2;
+    floats.push(new FloatText(midX,midY,`+${pts}`,combo>=2?'#ff00de':'#ffd700'));
+    if(combo>=2){ comboEl.innerText=`COMBO x${combo}!`; comboEl.style.opacity=1; clearTimeout(comboTimer); comboTimer=setTimeout(()=>{comboEl.style.opacity=0;},1500); }
     tone(1100+combo*80,'triangle',.2,.1);
 
-    if (gemsFound > 0) {
-        gemsGot += gemsFound;
-        playGem();
-        flashAlpha = 0.22;
-        updateGemUI();
-        floats.push(new FloatText(midX, midY-cellSize, `💎×${gemsFound}`, '#ffd700'));
-        if (gemsGot >= gemsNeed) { locked = true; setTimeout(showClear, 700); return; }
+    // Gems from cleared lines
+    if(gemsFound>0){
+        gemsGot+=gemsFound; playGem(); flashAlpha=.22;
+        floats.push(new FloatText(midX,midY-cellSize,`💎×${gemsFound}`,'#ffd700'));
     }
 
-    maybeGameOver();
-}
-
-function maybeGameOver() {
-    if (locked) return;
-    if (!isGameOver()) return;
-    if (tryFallback()) return;
-    setTimeout(showGameOver, 350);
-}
-
-function isGameOver() {
-    return pieces.every(p => {
-        for (let y=0; y<=CELL-p.shape.length; y++)
-            for (let x=0; x<=CELL-p.shape[0].length; x++)
-                if (canPlace(p.shape, x, y)) return false;
-        return true;
+    // Apply specials (with slight delay for visual separation)
+    let chainNeeded=false;
+    specialList.forEach(sp=>{
+        if(sp.type==='star'){
+            gemsGot+=5; playStar(); flashAlpha=.30;
+            floats.push(new FloatText(midX,midY-cellSize*2,'⭐ +5 GEM!','#ffd700'));
+        } else if(sp.type==='bomb'){
+            setTimeout(()=>triggerBomb(sp.x,sp.y),180); chainNeeded=true;
+        } else if(sp.type==='rainbow'){
+            setTimeout(()=>triggerRainbow(),180); chainNeeded=true;
+        }
     });
+
+    updateGemUI();
+    if(gemsGot>=gemsNeed&&!locked){ locked=true; setTimeout(showClear,700); return; }
+
+    if(chainNeeded) setTimeout(()=>checkLines(depth+1),400);
+    else if(!locked) maybeGameOver();
 }
 
-// Rescue: if no piece fits, swap one with a 1x1 if 1x1 can be placed
-function tryFallback() {
-    const oneByOne = SHAPES.find(s => s.s.length===1 && s.s[0].length===1);
-    if (!oneByOne) return false;
-    let canFit = false;
-    for (let y=0; y<CELL && !canFit; y++)
-        for (let x=0; x<CELL && !canFit; x++)
-            if (canPlace(oneByOne.s, x, y)) canFit = true;
-    if (!canFit) return false;
-
-    const idx = 0;
-    pieces[idx] = makePiece(oneByOne, idx);
-    floats.push(new FloatText(canvas.width/2, canvas.height-cellSize*0.5, '救済ピース！', '#00f2fe'));
-    tone(1000, 'sine', 0.3, 0.1);
-    return true;
+function triggerBomb(bx,by){
+    playBoom();
+    floats.push(new FloatText(canvas.width/2,canvas.height*.35,'💥 BOOM!','#ff4757'));
+    let bonusGems=0;
+    for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){
+        const nx=bx+dx,ny=by+dy;
+        if(nx<0||ny<0||nx>=CELL||ny>=CELL||!grid[ny][nx]) continue;
+        if(grid[ny][nx].gem) bonusGems++;
+        if(grid[ny][nx].special==='star') bonusGems+=5;
+        for(let i=0;i<8;i++) particles.push(new Particle(nx*cellSize+cellSize/2,ny*cellSize+cellSize/2,'#ff4757',true));
+        grid[ny][nx]=null;
+    }
+    if(bonusGems>0){
+        gemsGot+=bonusGems; updateGemUI();
+        floats.push(new FloatText(canvas.width/2,canvas.height*.42,`💎×${bonusGems}`,'#ffd700'));
+        if(gemsGot>=gemsNeed&&!locked){ locked=true; setTimeout(showClear,700); }
+    }
 }
 
-// ─── UI Updates ──────────────────────────────────────────
-function updateGemUI() {
-    gGotEl.textContent = Math.min(gemsGot, gemsNeed);
-    gNeedEl.textContent = gemsNeed;
-    const pct = Math.min(100, (gemsGot / gemsNeed) * 100);
-    gemBarFill.style.width = pct + '%';
+function triggerRainbow(){
+    const colorCount={};
+    for(let y=0;y<CELL;y++) for(let x=0;x<CELL;x++) if(grid[y][x]?.color){ const c=grid[y][x].color; colorCount[c]=(colorCount[c]||0)+1; }
+    const dominant=Object.keys(colorCount).sort((a,b)=>colorCount[b]-colorCount[a])[0];
+    if(!dominant) return;
+    playRainbow();
+    floats.push(new FloatText(canvas.width/2,canvas.height*.35,'🌈 RAINBOW!','#a29bfe'));
+    let bonusGems=0;
+    for(let y=0;y<CELL;y++) for(let x=0;x<CELL;x++){
+        if(grid[y][x]?.color===dominant){
+            if(grid[y][x].gem) bonusGems++;
+            if(grid[y][x].special==='star') bonusGems+=5;
+            for(let i=0;i<6;i++) particles.push(new Particle(x*cellSize+cellSize/2,y*cellSize+cellSize/2,dominant,true));
+            grid[y][x]=null;
+        }
+    }
+    gemsGot+=bonusGems; updateGemUI();
+    if(bonusGems>0) floats.push(new FloatText(canvas.width/2,canvas.height*.42,`💎×${bonusGems}`,'#ffd700'));
+    if(gemsGot>=gemsNeed&&!locked){ locked=true; setTimeout(showClear,700); }
 }
 
-// ─── Stage Clear ─────────────────────────────────────────
-function showClear() {
-    playClear();
-    overlayScoreEl.textContent = `SCORE: ${score}`;
-    nextNeedEl.textContent = gemNeedFor(stage + 1);
+function maybeGameOver(){
+    if(locked) return;
+    if(!isGameOver()) return;
+    if(tryFallback()) return;
+    setTimeout(showGameOver,350);
+}
+function isGameOver(){ return pieces.every(p=>!canPlaceAnywhere(p.shape)); }
+function tryFallback(){
+    if(fallbackCount>=3) return false;
+    const s1=SHAPES.find(s=>s.s.length===1&&s.s[0].length===1);
+    if(!s1) return false;
+    let hasSpace=false;
+    for(let y=0;y<CELL&&!hasSpace;y++) for(let x=0;x<CELL&&!hasSpace;x++) if(!grid[y][x]) hasSpace=true;
+    if(!hasSpace) return false;
+    fallbackCount++;
+    const remaining=3-fallbackCount;
+    pieces=pieces.map((p,i)=>canPlaceAnywhere(p.shape)?p:makePiece(s1,i));
+    const color=remaining===0?'#ff4757':'#ff9f43';
+    const msg=remaining>0?`救済ピース！（残り${remaining}回）`:'ラスト救済！もう限界！';
+    floats.push(new FloatText(canvas.width/2,canvas.height*.55,msg,color,true));
+    tone(1000,'sine',.3,.1); return true;
+}
+
+// ─── UI ───────────────────────────────────────────────────
+function updateGemUI(){
+    const got=Math.min(gemsGot,gemsNeed);
+    gGotEl.textContent=got; gNeedEl.textContent=gemsNeed;
+    gemBarFill.style.width=Math.min(100,(gemsGot/gemsNeed)*100)+'%';
+}
+
+// ─── Stage clear ─────────────────────────────────────────
+function showClear(){
+    playClear(); overlayScoreEl.textContent=`SCORE: ${score}`; nextNeedEl.textContent=gemNeedFor(stage+1);
     overlay.classList.add('show');
-    const cols = ['#ffd700','#ff00de','#00f2fe','#ff4136','#2ecc71','#a29bfe'];
-    for (let i=0; i<140; i++) {
-        setTimeout(()=>{
-            particles.push(new Particle(
-                Math.random()*canvas.width,
-                Math.random()*canvas.height*0.5,
-                cols[Math.floor(Math.random()*cols.length)], true
-            ));
-        }, Math.random()*1400);
-    }
+    const cols=['#ffd700','#ff00de','#00f2fe','#ff4136','#2ecc71','#a29bfe'];
+    for(let i=0;i<140;i++) setTimeout(()=>{ particles.push(new Particle(Math.random()*canvas.width,Math.random()*canvas.height*.5,cols[Math.floor(Math.random()*cols.length)],true)); },Math.random()*1400);
+}
+function nextStage(){
+    stage++; gemsGot=0; gemsNeed=gemNeedFor(stage); locked=false; fallbackCount=0;
+    overlay.classList.remove('show'); stageEl.textContent=`STAGE ${stage}`;
+    initGrid(); setupStartBlocks(); spawnPieces(); updateGemUI(); saveState();
 }
 
-function nextStage() {
-    stage++;
-    gemsGot = 0;
-    gemsNeed = gemNeedFor(stage);
-    locked = false;
-    overlay.classList.remove('show');
-    stageEl.textContent = `STAGE ${stage}`;
-    initGrid();
-    setupStartBlocks();
-    spawnPieces();
-    updateGemUI();
+// ─── Game over ────────────────────────────────────────────
+function showGameOver(){
+    const hs=getBestScore();
+    const isNew=score>0&&score>=hs;
+    if(isNew) setBestScore(score);
+    const best=isNew?score:hs;
+    goScoreText.innerHTML=`SCORE: ${score}<br><span style="font-size:14px;color:#aaa">ステージ ${stage} まで到達！</span><br><span style="font-size:16px;color:#ffd700">🏆 ベスト: ${best}${isNew?' 🎉NEW!':''}</span>`;
+    gameoverOverlay.classList.add('show'); clearSave(); refreshBestUI();
 }
-
-// ─── Game Over ───────────────────────────────────────────
-function showGameOver() {
-    goScoreText.textContent = `SCORE: ${score}`;
-    gameoverOverlay.classList.add('show');
-}
-
-function retryGame() {
-    score = 0; combo = 0; stage = 1; gemsGot = 0; gemsNeed = gemNeedFor(1); locked = false;
-    scoreEl.innerText = 'SCORE: 0';
-    stageEl.textContent = 'STAGE 1';
+function getBestScore(){ try{ return parseInt(localStorage.getItem(HS_KEY)||'0',10); }catch(e){ return 0; } }
+function setBestScore(s){ try{ localStorage.setItem(HS_KEY,String(s)); }catch(e){} }
+function refreshBestUI(){ bestScoreEl.textContent=`🏆 BEST: ${getBestScore()}`; }
+function retryGame(){
+    score=0;displayScore=0;combo=0;stage=1;gemsGot=0;gemsNeed=gemNeedFor(1);locked=false;shownSpecials=new Set();fallbackCount=0;
+    scoreEl.innerText='SCORE: 0'; stageEl.textContent='STAGE 1';
     gameoverOverlay.classList.remove('show');
-    initGrid();
-    setupStartBlocks();
-    spawnPieces();
-    updateGemUI();
+    initGrid(); setupStartBlocks(); spawnPieces(); updateGemUI(); saveState();
 }
 
-// ─── Resize handler ──────────────────────────────────────
-window.addEventListener('resize', () => {
-    resize();
-    const n = pieces.length;
-    pieces.forEach((p, i) => {
-        p.x = (canvas.width / (n + 1)) * (i + 1);
-        p.y = canvas.width + (canvas.height - canvas.width) / 2;
+// ─── Pause ────────────────────────────────────────────────
+function resumeGame(){ paused=false; pauseOverlay.classList.remove('show'); }
+
+// ─── Save / Load ─────────────────────────────────────────
+function saveState(){
+    try {
+        localStorage.setItem(SAVE_KEY,JSON.stringify({
+            v:2, grid:grid.map(row=>row.map(c=>c?{...c}:null)),
+            score,stage,gemsGot,gemsNeed,shownSpecials:[...shownSpecials],fallbackCount,ts:Date.now()
+        }));
+    } catch(e){}
+}
+function loadState(){
+    try {
+        const raw=localStorage.getItem(SAVE_KEY); if(!raw) return false;
+        const d=JSON.parse(raw); if(d.v!==2) return false;
+        grid=d.grid.map(row=>row.map(c=>c?{...c}:null));
+        score=d.score||0; displayScore=score; stage=d.stage||1; gemsGot=d.gemsGot||0; gemsNeed=d.gemsNeed||gemNeedFor(stage);
+        fallbackCount=d.fallbackCount||0;
+        if(d.shownSpecials) d.shownSpecials.forEach(s=>shownSpecials.add(s));
+        scoreEl.innerText=`SCORE: ${score}`; stageEl.textContent=`STAGE ${stage}`;
+        return true;
+    } catch(e){ return false; }
+}
+function clearSave(){ try{ localStorage.removeItem(SAVE_KEY); }catch(e){} }
+
+// ─── Android back gesture prevention ─────────────────────
+try {
+    history.pushState({game:true},document.title);
+    window.addEventListener('popstate',()=>{
+        saveState();
+        history.pushState({game:true},document.title);
     });
+} catch(e){}
+
+// ─── Visibility change (pause when tab hidden) ────────────
+document.addEventListener('visibilitychange',()=>{
+    if(document.hidden){ saveState(); paused=true; pauseOverlay.classList.add('show'); }
+    else { paused=false; pauseOverlay.classList.remove('show'); }
 });
 
-// ─── Init ────────────────────────────────────────────────
-function init() {
-    initGrid();
+// ─── Resize ───────────────────────────────────────────────
+window.addEventListener('resize',()=>{
     resize();
-    setupStartBlocks();
-    updateGemUI();
-    spawnPieces();
-    animate();
-}
+    const n=pieces.length;
+    pieces.forEach((p,i)=>{ p.x=(canvas.width/(n+1))*(i+1); p.y=canvas.width+(canvas.height-canvas.width)/2; });
+});
 
+// ─── Init ─────────────────────────────────────────────────
+function init(){
+    initGrid(); resize();
+    const restored=loadState();
+    if(!restored) setupStartBlocks();
+    updateGemUI(); spawnPieces(); animate(); refreshBestUI();
+}
 init();
 </script>
 </body>
