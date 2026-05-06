@@ -52,7 +52,7 @@
 </head>
 <body>
 <div id="top-ui">
-    <div id="score">SCORE: 0</div>
+    <div><div id="score">SCORE: 0</div><div id="best-score" style="font-size:12px;color:#aaa;text-align:left">🏆 BEST: 0</div></div>
     <div id="stage-label">STAGE 1</div>
 </div>
 <div id="gem-bar-row">
@@ -94,6 +94,7 @@ const nextNeedEl     = document.getElementById('next-need');
 const gameoverOverlay = document.getElementById('gameover-overlay');
 const goScoreText    = document.getElementById('go-score-text');
 const pauseOverlay   = document.getElementById('pause-overlay');
+const bestScoreEl    = document.getElementById('best-score');
 
 // ─── Audio ────────────────────────────────────────────────
 const AC = new (window.AudioContext || window.webkitAudioContext)();
@@ -130,8 +131,8 @@ class Particle {
     }
 }
 class FloatText {
-    constructor(x,y,txt,color='#ffd700') { this.x=x; this.y=y; this.txt=txt; this.color=color; this.life=1; this.vy=-1.8; }
-    step(){ this.y+=this.vy; this.life-=.022; }
+    constructor(x,y,txt,color='#ffd700',slow=false) { this.x=x; this.y=y; this.txt=txt; this.color=color; this.life=1; this.vy=slow?-0.4:-1.8; this.decay=slow?0.010:0.022; }
+    step(){ this.y+=this.vy; this.life-=this.decay; }
     draw(){
         ctx.globalAlpha=Math.max(0,this.life);
         ctx.fillStyle=this.color;
@@ -148,6 +149,7 @@ const CELL=8;
 const GEM={ ruby:{color:'#ff1f57',glow:'#ff6b81'}, sapphire:{color:'#1e90ff',glow:'#74b9ff'}, emerald:{color:'#00d96e',glow:'#55efc4'}, gold:{color:'#ffd700',glow:'#fff200'} };
 const GEM_KEYS=['ruby','sapphire','emerald','gold'];
 const SAVE_KEY='gemblock_v2';
+const HS_KEY='gemblock_hs';
 
 const SHAPES=[
     {s:[[1]],                           c:'#f1c40f',maxGems:1,weight:.5},
@@ -346,7 +348,7 @@ const SPECIAL_TIPS={
 function maybeShowSpecialTip(type){
     if(shownSpecials.has(type)) return;
     shownSpecials.add(type);
-    floats.push(new FloatText(canvas.width/2,canvas.height*.4,SPECIAL_TIPS[type],'#fff'));
+    floats.push(new FloatText(canvas.width/2,canvas.height*.4,SPECIAL_TIPS[type],'#fff',true));
 }
 
 function spawnPieces(){
@@ -566,14 +568,15 @@ function place(p,gx,gy){
 }
 
 function checkLines(depth=0){
-    if(depth>3) return;
+    if(depth>3||locked) return;
     let rows=[],cols=[];
     for(let i=0;i<CELL;i++){
         if(grid[i].every(c=>c)) rows.push(i);
         if(grid.map(r=>r[i]).every(c=>c)) cols.push(i);
     }
     if(!rows.length&&!cols.length){
-        if(depth===0){ combo=0;comboEl.style.opacity=0;maybeGameOver(); }
+        if(depth===0){ combo=0;comboEl.style.opacity=0; }
+        if(!locked) maybeGameOver();
         return;
     }
 
@@ -633,35 +636,47 @@ function checkLines(depth=0){
     if(gemsGot>=gemsNeed&&!locked){ locked=true; setTimeout(showClear,700); return; }
 
     if(chainNeeded) setTimeout(()=>checkLines(depth+1),400);
-    else if(depth===0) maybeGameOver();
+    else if(!locked) maybeGameOver();
 }
 
 function triggerBomb(bx,by){
     playBoom();
     floats.push(new FloatText(canvas.width/2,canvas.height*.35,'💥 BOOM!','#ff4757'));
+    let bonusGems=0;
     for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){
         const nx=bx+dx,ny=by+dy;
         if(nx<0||ny<0||nx>=CELL||ny>=CELL||!grid[ny][nx]) continue;
+        if(grid[ny][nx].gem) bonusGems++;
+        if(grid[ny][nx].special==='star') bonusGems+=5;
         for(let i=0;i<8;i++) particles.push(new Particle(nx*cellSize+cellSize/2,ny*cellSize+cellSize/2,'#ff4757',true));
         grid[ny][nx]=null;
+    }
+    if(bonusGems>0){
+        gemsGot+=bonusGems; updateGemUI();
+        floats.push(new FloatText(canvas.width/2,canvas.height*.42,`💎×${bonusGems}`,'#ffd700'));
+        if(gemsGot>=gemsNeed&&!locked){ locked=true; setTimeout(showClear,700); }
     }
 }
 
 function triggerRainbow(){
     const colorCount={};
-    for(let y=0;y<CELL;y++) for(let x=0;x<CELL;x++) if(grid[y][x]&&grid[y][x].color){ const c=grid[y][x].color; colorCount[c]=(colorCount[c]||0)+1; }
+    for(let y=0;y<CELL;y++) for(let x=0;x<CELL;x++) if(grid[y][x]?.color){ const c=grid[y][x].color; colorCount[c]=(colorCount[c]||0)+1; }
     const dominant=Object.keys(colorCount).sort((a,b)=>colorCount[b]-colorCount[a])[0];
     if(!dominant) return;
     playRainbow();
     floats.push(new FloatText(canvas.width/2,canvas.height*.35,'🌈 RAINBOW!','#a29bfe'));
-    let cleared=0;
+    let bonusGems=0;
     for(let y=0;y<CELL;y++) for(let x=0;x<CELL;x++){
-        if(grid[y][x]&&grid[y][x].color===dominant){
+        if(grid[y][x]?.color===dominant){
+            if(grid[y][x].gem) bonusGems++;
+            if(grid[y][x].special==='star') bonusGems+=5;
             for(let i=0;i<6;i++) particles.push(new Particle(x*cellSize+cellSize/2,y*cellSize+cellSize/2,dominant,true));
-            grid[y][x]=null; cleared++;
+            grid[y][x]=null;
         }
     }
-    if(cleared>0){ gemsGot+=Math.floor(cleared/3); updateGemUI(); }
+    gemsGot+=bonusGems; updateGemUI();
+    if(bonusGems>0) floats.push(new FloatText(canvas.width/2,canvas.height*.42,`💎×${bonusGems}`,'#ffd700'));
+    if(gemsGot>=gemsNeed&&!locked){ locked=true; setTimeout(showClear,700); }
 }
 
 function maybeGameOver(){
@@ -703,7 +718,17 @@ function nextStage(){
 }
 
 // ─── Game over ────────────────────────────────────────────
-function showGameOver(){ goScoreText.textContent=`SCORE: ${score}`; gameoverOverlay.classList.add('show'); clearSave(); }
+function showGameOver(){
+    const hs=getBestScore();
+    const isNew=score>0&&score>=hs;
+    if(isNew) setBestScore(score);
+    const best=isNew?score:hs;
+    goScoreText.innerHTML=`SCORE: ${score}<br><span style="font-size:16px;color:#ffd700">🏆 ベスト: ${best}${isNew?' 🎉NEW!':''}</span>`;
+    gameoverOverlay.classList.add('show'); clearSave(); refreshBestUI();
+}
+function getBestScore(){ try{ return parseInt(localStorage.getItem(HS_KEY)||'0',10); }catch(e){ return 0; } }
+function setBestScore(s){ try{ localStorage.setItem(HS_KEY,String(s)); }catch(e){} }
+function refreshBestUI(){ bestScoreEl.textContent=`🏆 BEST: ${getBestScore()}`; }
 function retryGame(){
     score=0;combo=0;stage=1;gemsGot=0;gemsNeed=gemNeedFor(1);locked=false;shownSpecials=new Set();
     scoreEl.innerText='SCORE: 0'; stageEl.textContent='STAGE 1';
@@ -763,7 +788,7 @@ function init(){
     initGrid(); resize();
     const restored=loadState();
     if(!restored) setupStartBlocks();
-    updateGemUI(); spawnPieces(); animate();
+    updateGemUI(); spawnPieces(); animate(); refreshBestUI();
 }
 init();
 </script>
