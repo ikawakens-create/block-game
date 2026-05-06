@@ -228,10 +228,11 @@ const STAGE_PATTERNS=[
 // ─── State ────────────────────────────────────────────────
 let grid, cellSize, particles=[], floats=[];
 let pieces=[], drag=null, dragX=0, dragY=0, dragScale=1;
-let score=0, combo=0, comboTimer=null;
+let score=0, displayScore=0, combo=0, comboTimer=null;
 let stage=1, gemsGot=0, gemsNeed=15;
 let locked=false, paused=false, flashAlpha=0;
 let shownSpecials=new Set();
+let fallbackCount=0;
 
 function gemNeedFor(s){ return Math.min(15+(s-1)*7,50); }
 
@@ -505,9 +506,23 @@ function animate(){
             }
         }
         if(flashAlpha>0){ ctx.fillStyle=`rgba(255,215,0,${flashAlpha})`; ctx.fillRect(0,0,canvas.width,canvas.height); flashAlpha=Math.max(0,flashAlpha-.04); }
+        // Tray label
+        ctx.fillStyle='rgba(255,255,255,.13)';
+        ctx.font=`bold ${Math.max(9,Math.floor(cellSize*.28))}px Arial`;
+        ctx.textAlign='center';
+        ctx.fillText('▼  NEXT  ▼', canvas.width/2, canvas.width+cellSize*.42);
+        ctx.textAlign='left';
         if(drag) dragScale=Math.min(dragScale+.08,1.15); else dragScale=1;
-        pieces.forEach(p=>{ if(p!==drag) drawPiece(p,p.x,p.y,.6); });
+        pieces.forEach(p=>{
+            if(p!==drag){
+                if(!canPlaceAnywhere(p.shape)) ctx.globalAlpha=.28;
+                drawPiece(p,p.x,p.y,.6);
+                ctx.globalAlpha=1;
+            }
+        });
         if(drag) drawPiece(drag,dragX,dragY,dragScale);
+        // Score count-up animation
+        if(displayScore<score){ displayScore=Math.min(score,displayScore+Math.max(1,Math.ceil((score-displayScore)*.18))); scoreEl.innerText=`SCORE: ${displayScore}`; }
     }
     requestAnimationFrame(animate);
 }
@@ -606,11 +621,10 @@ function checkLines(depth=0){
 
     const lines=rows.length+cols.length;
     const pts=lines*100*combo;
-    score+=pts; scoreEl.innerText=`SCORE: ${score}`;
+    score+=pts;
     const midX=canvas.width/2, midY=canvas.width/2;
     floats.push(new FloatText(midX,midY,`+${pts}`,combo>=2?'#ff00de':'#ffd700'));
-    comboEl.innerText=`COMBO x${combo}!`; comboEl.style.opacity=1;
-    clearTimeout(comboTimer); comboTimer=setTimeout(()=>{comboEl.style.opacity=0;},1500);
+    if(combo>=2){ comboEl.innerText=`COMBO x${combo}!`; comboEl.style.opacity=1; clearTimeout(comboTimer); comboTimer=setTimeout(()=>{comboEl.style.opacity=0;},1500); }
     tone(1100+combo*80,'triangle',.2,.1);
 
     // Gems from cleared lines
@@ -687,14 +701,19 @@ function maybeGameOver(){
 }
 function isGameOver(){ return pieces.every(p=>!canPlaceAnywhere(p.shape)); }
 function tryFallback(){
+    if(fallbackCount>=3) return false;
     const s1=SHAPES.find(s=>s.s.length===1&&s.s[0].length===1);
     if(!s1) return false;
-    for(let y=0;y<CELL;y++) for(let x=0;x<CELL;x++) if(canPlace(s1.s,x,y)){
-        pieces[0]=makePiece(s1,0);
-        floats.push(new FloatText(canvas.width/2,canvas.height-cellSize*.5,'救済ピース！','#00f2fe'));
-        tone(1000,'sine',.3,.1); return true;
-    }
-    return false;
+    let hasSpace=false;
+    for(let y=0;y<CELL&&!hasSpace;y++) for(let x=0;x<CELL&&!hasSpace;x++) if(!grid[y][x]) hasSpace=true;
+    if(!hasSpace) return false;
+    fallbackCount++;
+    const remaining=3-fallbackCount;
+    pieces=pieces.map((p,i)=>canPlaceAnywhere(p.shape)?p:makePiece(s1,i));
+    const color=remaining===0?'#ff4757':'#ff9f43';
+    const msg=remaining>0?`救済ピース！（残り${remaining}回）`:'ラスト救済！もう限界！';
+    floats.push(new FloatText(canvas.width/2,canvas.height*.55,msg,color,true));
+    tone(1000,'sine',.3,.1); return true;
 }
 
 // ─── UI ───────────────────────────────────────────────────
@@ -712,7 +731,7 @@ function showClear(){
     for(let i=0;i<140;i++) setTimeout(()=>{ particles.push(new Particle(Math.random()*canvas.width,Math.random()*canvas.height*.5,cols[Math.floor(Math.random()*cols.length)],true)); },Math.random()*1400);
 }
 function nextStage(){
-    stage++; gemsGot=0; gemsNeed=gemNeedFor(stage); locked=false;
+    stage++; gemsGot=0; gemsNeed=gemNeedFor(stage); locked=false; fallbackCount=0;
     overlay.classList.remove('show'); stageEl.textContent=`STAGE ${stage}`;
     initGrid(); setupStartBlocks(); spawnPieces(); updateGemUI(); saveState();
 }
@@ -723,14 +742,14 @@ function showGameOver(){
     const isNew=score>0&&score>=hs;
     if(isNew) setBestScore(score);
     const best=isNew?score:hs;
-    goScoreText.innerHTML=`SCORE: ${score}<br><span style="font-size:16px;color:#ffd700">🏆 ベスト: ${best}${isNew?' 🎉NEW!':''}</span>`;
+    goScoreText.innerHTML=`SCORE: ${score}<br><span style="font-size:14px;color:#aaa">ステージ ${stage} まで到達！</span><br><span style="font-size:16px;color:#ffd700">🏆 ベスト: ${best}${isNew?' 🎉NEW!':''}</span>`;
     gameoverOverlay.classList.add('show'); clearSave(); refreshBestUI();
 }
 function getBestScore(){ try{ return parseInt(localStorage.getItem(HS_KEY)||'0',10); }catch(e){ return 0; } }
 function setBestScore(s){ try{ localStorage.setItem(HS_KEY,String(s)); }catch(e){} }
 function refreshBestUI(){ bestScoreEl.textContent=`🏆 BEST: ${getBestScore()}`; }
 function retryGame(){
-    score=0;combo=0;stage=1;gemsGot=0;gemsNeed=gemNeedFor(1);locked=false;shownSpecials=new Set();
+    score=0;displayScore=0;combo=0;stage=1;gemsGot=0;gemsNeed=gemNeedFor(1);locked=false;shownSpecials=new Set();fallbackCount=0;
     scoreEl.innerText='SCORE: 0'; stageEl.textContent='STAGE 1';
     gameoverOverlay.classList.remove('show');
     initGrid(); setupStartBlocks(); spawnPieces(); updateGemUI(); saveState();
@@ -744,7 +763,7 @@ function saveState(){
     try {
         localStorage.setItem(SAVE_KEY,JSON.stringify({
             v:2, grid:grid.map(row=>row.map(c=>c?{...c}:null)),
-            score,stage,gemsGot,gemsNeed,shownSpecials:[...shownSpecials],ts:Date.now()
+            score,stage,gemsGot,gemsNeed,shownSpecials:[...shownSpecials],fallbackCount,ts:Date.now()
         }));
     } catch(e){}
 }
@@ -753,7 +772,8 @@ function loadState(){
         const raw=localStorage.getItem(SAVE_KEY); if(!raw) return false;
         const d=JSON.parse(raw); if(d.v!==2) return false;
         grid=d.grid.map(row=>row.map(c=>c?{...c}:null));
-        score=d.score||0; stage=d.stage||1; gemsGot=d.gemsGot||0; gemsNeed=d.gemsNeed||gemNeedFor(stage);
+        score=d.score||0; displayScore=score; stage=d.stage||1; gemsGot=d.gemsGot||0; gemsNeed=d.gemsNeed||gemNeedFor(stage);
+        fallbackCount=d.fallbackCount||0;
         if(d.shownSpecials) d.shownSpecials.forEach(s=>shownSpecials.add(s));
         scoreEl.innerText=`SCORE: ${score}`; stageEl.textContent=`STAGE ${stage}`;
         return true;
